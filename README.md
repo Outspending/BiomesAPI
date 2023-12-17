@@ -1,5 +1,7 @@
 # BiomesAPI
-BiomesAPI, an open-source library, empowers developers to effortlessly craft custom biomes within PaperMC or Spigot software, ensuring a seamless integration without the need for server restarts.
+[![Rust](https://github.com/Outspending/BiomesAPI/actions/workflows/gradle.yml/badge.svg)](https://github.com/Outspending/BiomesAPI/actions/workflows/gradle.yml)
+
+BiomesAPI is an open-source library, empowers developers to effortlessly craft custom biomes within PaperMC or Spigot software, ensuring a seamless integration without the need for server restarts.
 
 BiomesAPI provides a plethora of reliable and up-to-date APIs, allowing you to tailor biomes to your exact specifications.
 
@@ -23,7 +25,7 @@ dependencies {
 
 2. Reload your project's dependencies.
 
-And that's it! You've seamlessly incorporated BiomesAPI into your project.
+And that's it! You've successfully added BiomesAPI into your project!
 
 ## Usage
 Explore helpful examples to kickstart your BiomesAPI journey [here](https://github.com/Outspending/BiomesAPI/wiki).
