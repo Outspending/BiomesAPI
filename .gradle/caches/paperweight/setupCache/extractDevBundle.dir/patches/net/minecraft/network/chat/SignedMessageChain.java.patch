@@ -1,0 +1,29 @@
+--- a/net/minecraft/network/chat/SignedMessageChain.java
++++ b/net/minecraft/network/chat/SignedMessageChain.java
+@@ -39,7 +39,7 @@
+             } else {
+                 PlayerChatMessage playerChatMessage = new PlayerChatMessage(signedMessageLink, signature, body, (Component)null, FilterMask.PASS_THROUGH);
+                 if (!playerChatMessage.verify(signatureValidator)) {
+-                    throw new SignedMessageChain.DecodeException(Component.translatable("multiplayer.disconnect.unsigned_chat"), true);
++                    throw new SignedMessageChain.DecodeException(Component.translatable("multiplayer.disconnect.unsigned_chat"), true, org.bukkit.event.player.PlayerKickEvent.Cause.UNSIGNED_CHAT); // Paper - kick event causes
+                 } else {
+                     if (playerChatMessage.hasExpiredServer(Instant.now())) {
+                         LOGGER.warn("Received expired chat: '{}'. Is the client/server system time unsynchronized?", (Object)body.content());
+@@ -63,10 +63,17 @@
+ 
+     public static class DecodeException extends ThrowingComponent {
+         private final boolean shouldDisconnect;
++        public final org.bukkit.event.player.PlayerKickEvent.Cause kickCause; // Paper
+ 
+         public DecodeException(Component message, boolean shouldDisconnect) {
++            // Paper start
++            this(message, shouldDisconnect, org.bukkit.event.player.PlayerKickEvent.Cause.UNKNOWN);
++        }
++        public DecodeException(Component message, boolean shouldDisconnect, org.bukkit.event.player.PlayerKickEvent.Cause kickCause) {
++            // Paper end
+             super(message);
+             this.shouldDisconnect = shouldDisconnect;
++            this.kickCause = kickCause; // Paper
+         }
+ 
+         public boolean shouldDisconnect() {

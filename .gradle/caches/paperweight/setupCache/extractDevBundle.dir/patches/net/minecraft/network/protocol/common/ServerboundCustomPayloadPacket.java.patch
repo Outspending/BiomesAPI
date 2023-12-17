@@ -1,0 +1,56 @@
+--- a/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java
++++ b/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java
+@@ -10,23 +10,27 @@
+ import net.minecraft.resources.ResourceLocation;
+ 
+ public record ServerboundCustomPayloadPacket(CustomPacketPayload payload) implements Packet<ServerCommonPacketListener> {
++
+     private static final int MAX_PAYLOAD_SIZE = 32767;
+-    private static final Map<ResourceLocation, FriendlyByteBuf.Reader<? extends CustomPacketPayload>> KNOWN_TYPES = ImmutableMap.<ResourceLocation, FriendlyByteBuf.Reader<? extends CustomPacketPayload>>builder().put(BrandPayload.ID, BrandPayload::new).build();
++    private static final Map<ResourceLocation, FriendlyByteBuf.Reader<? extends CustomPacketPayload>> KNOWN_TYPES = ImmutableMap.<ResourceLocation, FriendlyByteBuf.Reader<? extends CustomPacketPayload>>builder().build(); // CraftBukkit - no special handling
+ 
+     public ServerboundCustomPayloadPacket(FriendlyByteBuf buf) {
+         this(readPayload(buf.readResourceLocation(), buf));
+     }
+ 
+     private static CustomPacketPayload readPayload(ResourceLocation id, FriendlyByteBuf buf) {
+-        FriendlyByteBuf.Reader<? extends CustomPacketPayload> reader = KNOWN_TYPES.get(id);
+-        return (CustomPacketPayload)(reader != null ? reader.apply(buf) : readUnknownPayload(id, buf));
++        FriendlyByteBuf.Reader<? extends CustomPacketPayload> packetdataserializer_a = (FriendlyByteBuf.Reader) ServerboundCustomPayloadPacket.KNOWN_TYPES.get(id);
++
++        return (CustomPacketPayload) (packetdataserializer_a != null ? (CustomPacketPayload) packetdataserializer_a.apply(buf) : readUnknownPayload(id, buf));
+     }
+ 
+-    private static DiscardedPayload readUnknownPayload(ResourceLocation id, FriendlyByteBuf buf) {
+-        int i = buf.readableBytes();
++    private static UnknownPayload readUnknownPayload(ResourceLocation minecraftkey, FriendlyByteBuf packetdataserializer) { // CraftBukkit
++        int i = packetdataserializer.readableBytes();
++
+         if (i >= 0 && i <= 32767) {
+-            buf.skipBytes(i);
+-            return new DiscardedPayload(id);
++            // CraftBukkit start
++            return new UnknownPayload(minecraftkey, packetdataserializer.readBytes(i));
++            // CraftBukkit end
+         } else {
+             throw new IllegalArgumentException("Payload may not be larger than 32767 bytes");
+         }
+@@ -38,8 +42,17 @@
+         this.payload.write(buf);
+     }
+ 
+-    @Override
+     public void handle(ServerCommonPacketListener listener) {
+         listener.handleCustomPayload(this);
+     }
++
++    // CraftBukkit start
++    public record UnknownPayload(ResourceLocation id, io.netty.buffer.ByteBuf data) implements CustomPacketPayload {
++
++        @Override
++        public void write(FriendlyByteBuf buf) {
++            buf.writeBytes(this.data);
++        }
++    }
++    // CraftBukkit end
+ }

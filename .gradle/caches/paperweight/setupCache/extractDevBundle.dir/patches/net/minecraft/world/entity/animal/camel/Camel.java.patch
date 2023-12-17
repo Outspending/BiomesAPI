@@ -1,0 +1,64 @@
+--- a/net/minecraft/world/entity/animal/camel/Camel.java
++++ b/net/minecraft/world/entity/animal/camel/Camel.java
+@@ -148,7 +148,7 @@
+     @Override
+     protected void customServerAiStep() {
+         this.level().getProfiler().push("camelBrain");
+-        Brain<?> brain = this.getBrain();
++        Brain<Camel> brain = (Brain<Camel>) this.getBrain(); // Paper - decompile fix
+         brain.tick((ServerLevel)this.level(), this);
+         this.level().getProfiler().pop();
+         this.level().getProfiler().push("camelActivityUpdate");
+@@ -384,12 +384,12 @@
+         } else {
+             boolean bl = this.getHealth() < this.getMaxHealth();
+             if (bl) {
+-                this.heal(2.0F);
++                this.heal(2.0F, org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.EATING); // Paper
+             }
+ 
+             boolean bl2 = this.isTamed() && this.getAge() == 0 && this.canFallInLove();
+             if (bl2) {
+-                this.setInLove(player);
++                this.setInLove(player, item.copy()); // Paper
+             }
+ 
+             boolean bl3 = this.isBaby();
+@@ -445,9 +445,9 @@
+     }
+ 
+     @Override
+-    protected void actuallyHurt(DamageSource source, float amount) {
++    protected boolean damageEntity0(DamageSource source, float amount) { // Paper - fix CB method rename issue
+         this.standUpInstantly();
+-        super.actuallyHurt(source, amount);
++        return super.damageEntity0(source, amount); // Paper - fix CB method rename issue
+     }
+ 
+     @Override
+@@ -556,7 +556,7 @@
+     }
+ 
+     public void sitDown() {
+-        if (!this.isCamelSitting()) {
++        if (!this.isCamelSitting() && new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), true).callEvent()) { // Paper
+             this.playSound(SoundEvents.CAMEL_SIT, 1.0F, this.getVoicePitch());
+             this.setPose(Pose.SITTING);
+             this.gameEvent(GameEvent.ENTITY_ACTION);
+@@ -565,7 +565,7 @@
+     }
+ 
+     public void standUp() {
+-        if (this.isCamelSitting()) {
++        if (this.isCamelSitting() && new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), false).callEvent()) { // Paper
+             this.playSound(SoundEvents.CAMEL_STAND, 1.0F, this.getVoicePitch());
+             this.setPose(Pose.STANDING);
+             this.gameEvent(GameEvent.ENTITY_ACTION);
+@@ -574,6 +574,7 @@
+     }
+ 
+     public void standUpInstantly() {
++        if (this.isCamelSitting() && !new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), false).callEvent()) return; // Paper
+         this.setPose(Pose.STANDING);
+         this.gameEvent(GameEvent.ENTITY_ACTION);
+         this.resetLastPoseChangeTickToFullStand(this.level().getGameTime());

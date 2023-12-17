@@ -1,0 +1,344 @@
+--- a/net/minecraft/world/entity/animal/goat/Goat.java
++++ b/net/minecraft/world/entity/animal/goat/Goat.java
+@@ -4,6 +4,7 @@
+ import com.mojang.serialization.Dynamic;
+ import javax.annotation.Nullable;
+ import net.minecraft.core.BlockPos;
++import net.minecraft.core.Holder;
+ import net.minecraft.core.HolderSet;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.nbt.CompoundTag;
+@@ -54,15 +55,22 @@
+ import net.minecraft.world.phys.Vec3;
+ import org.joml.Vector3f;
+ 
++// CraftBukkit start
++import org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory;
++import org.bukkit.craftbukkit.v1_20_R2.inventory.CraftItemStack;
++import org.bukkit.event.player.PlayerBucketFillEvent;
++// CraftBukkit end
++
+ public class Goat extends Animal {
++
+     public static final EntityDimensions LONG_JUMPING_DIMENSIONS = EntityDimensions.scalable(0.9F, 1.3F).scale(0.7F);
+     private static final int ADULT_ATTACK_DAMAGE = 2;
+     private static final int BABY_ATTACK_DAMAGE = 1;
+     protected static final ImmutableList<SensorType<? extends Sensor<? super Goat>>> SENSOR_TYPES = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.NEAREST_ADULT, SensorType.HURT_BY, SensorType.GOAT_TEMPTATIONS);
+-    protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.of(MemoryModuleType.LOOK_TARGET, MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES, MemoryModuleType.WALK_TARGET, MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleType.PATH, MemoryModuleType.ATE_RECENTLY, MemoryModuleType.BREED_TARGET, MemoryModuleType.LONG_JUMP_COOLDOWN_TICKS, MemoryModuleType.LONG_JUMP_MID_JUMP, MemoryModuleType.TEMPTING_PLAYER, MemoryModuleType.NEAREST_VISIBLE_ADULT, MemoryModuleType.TEMPTATION_COOLDOWN_TICKS, MemoryModuleType.IS_TEMPTED, MemoryModuleType.RAM_COOLDOWN_TICKS, MemoryModuleType.RAM_TARGET, MemoryModuleType.IS_PANICKING);
++    protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.of(MemoryModuleType.LOOK_TARGET, MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES, MemoryModuleType.WALK_TARGET, MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleType.PATH, MemoryModuleType.ATE_RECENTLY, MemoryModuleType.BREED_TARGET, MemoryModuleType.LONG_JUMP_COOLDOWN_TICKS, MemoryModuleType.LONG_JUMP_MID_JUMP, MemoryModuleType.TEMPTING_PLAYER, MemoryModuleType.NEAREST_VISIBLE_ADULT, MemoryModuleType.TEMPTATION_COOLDOWN_TICKS, new MemoryModuleType[]{MemoryModuleType.IS_TEMPTED, MemoryModuleType.RAM_COOLDOWN_TICKS, MemoryModuleType.RAM_TARGET, MemoryModuleType.IS_PANICKING});
+     public static final int GOAT_FALL_DAMAGE_REDUCTION = 10;
+     public static final double GOAT_SCREAMING_CHANCE = 0.02D;
+-    public static final double UNIHORN_CHANCE = (double)0.1F;
++    public static final double UNIHORN_CHANCE = 0.10000000149011612D;
+     private static final EntityDataAccessor<Boolean> DATA_IS_SCREAMING_GOAT = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+     public static final EntityDataAccessor<Boolean> DATA_HAS_LEFT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+     public static final EntityDataAccessor<Boolean> DATA_HAS_RIGHT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+@@ -77,15 +85,16 @@
+     }
+ 
+     public ItemStack createHorn() {
+-        RandomSource randomSource = RandomSource.create((long)this.getUUID().hashCode());
+-        TagKey<Instrument> tagKey = this.isScreamingGoat() ? InstrumentTags.SCREAMING_GOAT_HORNS : InstrumentTags.REGULAR_GOAT_HORNS;
+-        HolderSet<Instrument> holderSet = BuiltInRegistries.INSTRUMENT.getOrCreateTag(tagKey);
+-        return InstrumentItem.create(Items.GOAT_HORN, holderSet.getRandomElement(randomSource).get());
++        RandomSource randomsource = RandomSource.create((long) this.getUUID().hashCode());
++        TagKey<Instrument> tagkey = this.isScreamingGoat() ? InstrumentTags.SCREAMING_GOAT_HORNS : InstrumentTags.REGULAR_GOAT_HORNS;
++        HolderSet<Instrument> holderset = BuiltInRegistries.INSTRUMENT.getOrCreateTag(tagkey);
++
++        return InstrumentItem.create(Items.GOAT_HORN, (Holder) holderset.getRandomElement(randomsource).get());
+     }
+ 
+     @Override
+     protected Brain.Provider<Goat> brainProvider() {
+-        return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
++        return Brain.provider(Goat.MEMORY_TYPES, Goat.SENSOR_TYPES);
+     }
+ 
+     @Override
+@@ -94,7 +103,7 @@
+     }
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+-        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.MOVEMENT_SPEED, (double)0.2F).add(Attributes.ATTACK_DAMAGE, 2.0D);
++        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.MOVEMENT_SPEED, 0.20000000298023224D).add(Attributes.ATTACK_DAMAGE, 2.0D);
+     }
+ 
+     @Override
+@@ -140,32 +149,38 @@
+ 
+     @Nullable
+     @Override
+-    public Goat getBreedOffspring(ServerLevel serverLevel, AgeableMob ageableMob) {
+-        Goat goat = EntityType.GOAT.create(serverLevel);
++    public Goat getBreedOffspring(ServerLevel world, AgeableMob entity) {
++        Goat goat = (Goat) EntityType.GOAT.create(world);
++
+         if (goat != null) {
+-            boolean var10000;
+-            label22: {
+-                label21: {
+-                    GoatAi.initMemories(goat, serverLevel.getRandom());
+-                    AgeableMob ageableMob2 = (AgeableMob)(serverLevel.getRandom().nextBoolean() ? this : ageableMob);
+-                    if (ageableMob2 instanceof Goat) {
+-                        Goat goat2 = (Goat)ageableMob2;
+-                        if (goat2.isScreamingGoat()) {
++            boolean flag;
++            label22:
++            {
++                label21:
++                {
++                    GoatAi.initMemories(goat, world.getRandom());
++                    Object object = world.getRandom().nextBoolean() ? this : entity;
++
++                    if (object instanceof Goat) {
++                        Goat goat1 = (Goat) object;
++
++                        if (goat1.isScreamingGoat()) {
+                             break label21;
+                         }
+                     }
+ 
+-                    if (!(serverLevel.getRandom().nextDouble() < 0.02D)) {
+-                        var10000 = false;
++                    if (world.getRandom().nextDouble() >= 0.02D) {
++                        flag = false;
+                         break label22;
+                     }
+                 }
+ 
+-                var10000 = true;
++                flag = true;
+             }
+ 
+-            boolean bl = var10000;
+-            goat.setScreamingGoat(bl);
++            boolean flag1 = flag;
++
++            goat.setScreamingGoat(flag1);
+         }
+ 
+         return goat;
+@@ -173,13 +188,13 @@
+ 
+     @Override
+     public Brain<Goat> getBrain() {
+-        return super.getBrain();
++        return (Brain<Goat>) super.getBrain(); // CraftBukkit - decompile error
+     }
+ 
+     @Override
+     protected void customServerAiStep() {
+         this.level().getProfiler().push("goatBrain");
+-        this.getBrain().tick((ServerLevel)this.level(), this);
++        this.getBrain().tick((ServerLevel) this.level(), this);
+         this.level().getProfiler().pop();
+         this.level().getProfiler().push("goatActivityUpdate");
+         GoatAi.updateActivity(this);
+@@ -195,9 +210,10 @@
+     @Override
+     public void setYHeadRot(float headYaw) {
+         int i = this.getMaxHeadYRot();
+-        float f = Mth.degreesDifference(this.yBodyRot, headYaw);
+-        float g = Mth.clamp(f, (float)(-i), (float)i);
+-        super.setYHeadRot(this.yBodyRot + g);
++        float f1 = Mth.degreesDifference(this.yBodyRot, headYaw);
++        float f2 = Mth.clamp(f1, (float) (-i), (float) i);
++
++        super.setYHeadRot(this.yBodyRot + f2);
+     }
+ 
+     @Override
+@@ -207,31 +223,44 @@
+ 
+     @Override
+     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+-        ItemStack itemStack = player.getItemInHand(hand);
+-        if (itemStack.is(Items.BUCKET) && !this.isBaby()) {
++        ItemStack itemstack = player.getItemInHand(hand);
++
++        if (itemstack.is(Items.BUCKET) && !this.isBaby()) {
++            // CraftBukkit start - Got milk?
++            PlayerBucketFillEvent event = CraftEventFactory.callPlayerBucketFillEvent((ServerLevel) player.level(), player, this.blockPosition(), this.blockPosition(), null, itemstack, Items.MILK_BUCKET, hand);
++
++            if (event.isCancelled()) {
++                return InteractionResult.PASS;
++            }
++            // CraftBukkit end
+             player.playSound(this.getMilkingSound(), 1.0F, 1.0F);
+-            ItemStack itemStack2 = ItemUtils.createFilledResult(itemStack, player, Items.MILK_BUCKET.getDefaultInstance());
+-            player.setItemInHand(hand, itemStack2);
++            ItemStack itemstack1 = ItemUtils.createFilledResult(itemstack, player, CraftItemStack.asNMSCopy(event.getItemStack())); // CraftBukkit
++
++            player.setItemInHand(hand, itemstack1);
+             return InteractionResult.sidedSuccess(this.level().isClientSide);
+         } else {
+-            InteractionResult interactionResult = super.mobInteract(player, hand);
+-            if (interactionResult.consumesAction() && this.isFood(itemStack)) {
+-                this.level().playSound((Player)null, this, this.getEatingSound(itemStack), SoundSource.NEUTRAL, 1.0F, Mth.randomBetween(this.level().random, 0.8F, 1.2F));
++            boolean isFood = this.isFood(itemstack); // Paper - track before stack is possibly decreased to 0 (Fixes MC-244739)
++            InteractionResult enuminteractionresult = super.mobInteract(player, hand);
++
++            if (enuminteractionresult.consumesAction() && isFood) { // Paper
++                this.level().playSound((Player) null, (Entity) this, this.getEatingSound(itemstack), SoundSource.NEUTRAL, 1.0F, Mth.randomBetween(this.level().random, 0.8F, 1.2F));
+             }
+ 
+-            return interactionResult;
++            return enuminteractionresult;
+         }
+     }
+ 
+     @Override
+     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, MobSpawnType spawnReason, @Nullable SpawnGroupData entityData, @Nullable CompoundTag entityNbt) {
+-        RandomSource randomSource = world.getRandom();
+-        GoatAi.initMemories(this, randomSource);
+-        this.setScreamingGoat(randomSource.nextDouble() < 0.02D);
++        RandomSource randomsource = world.getRandom();
++
++        GoatAi.initMemories(this, randomsource);
++        this.setScreamingGoat(randomsource.nextDouble() < 0.02D);
+         this.ageBoundaryReached();
+-        if (!this.isBaby() && (double)randomSource.nextFloat() < (double)0.1F) {
+-            EntityDataAccessor<Boolean> entityDataAccessor = randomSource.nextBoolean() ? DATA_HAS_LEFT_HORN : DATA_HAS_RIGHT_HORN;
+-            this.entityData.set(entityDataAccessor, false);
++        if (!this.isBaby() && (double) randomsource.nextFloat() < 0.10000000149011612D) {
++            EntityDataAccessor<Boolean> datawatcherobject = randomsource.nextBoolean() ? Goat.DATA_HAS_LEFT_HORN : Goat.DATA_HAS_RIGHT_HORN;
++
++            this.entityData.set(datawatcherobject, false);
+         }
+ 
+         return super.finalizeSpawn(world, difficulty, spawnReason, entityData, entityNbt);
+@@ -245,7 +274,7 @@
+ 
+     @Override
+     public EntityDimensions getDimensions(Pose pose) {
+-        return pose == Pose.LONG_JUMPING ? LONG_JUMPING_DIMENSIONS.scale(this.getScale()) : super.getDimensions(pose);
++        return pose == Pose.LONG_JUMPING ? Goat.LONG_JUMPING_DIMENSIONS.scale(this.getScale()) : super.getDimensions(pose);
+     }
+ 
+     @Override
+@@ -260,8 +289,8 @@
+     public void readAdditionalSaveData(CompoundTag nbt) {
+         super.readAdditionalSaveData(nbt);
+         this.setScreamingGoat(nbt.getBoolean("IsScreamingGoat"));
+-        this.entityData.set(DATA_HAS_LEFT_HORN, nbt.getBoolean("HasLeftHorn"));
+-        this.entityData.set(DATA_HAS_RIGHT_HORN, nbt.getBoolean("HasRightHorn"));
++        this.entityData.set(Goat.DATA_HAS_LEFT_HORN, nbt.getBoolean("HasLeftHorn"));
++        this.entityData.set(Goat.DATA_HAS_RIGHT_HORN, nbt.getBoolean("HasRightHorn"));
+     }
+ 
+     @Override
+@@ -291,66 +320,68 @@
+     @Override
+     protected void defineSynchedData() {
+         super.defineSynchedData();
+-        this.entityData.define(DATA_IS_SCREAMING_GOAT, false);
+-        this.entityData.define(DATA_HAS_LEFT_HORN, true);
+-        this.entityData.define(DATA_HAS_RIGHT_HORN, true);
++        this.entityData.define(Goat.DATA_IS_SCREAMING_GOAT, false);
++        this.entityData.define(Goat.DATA_HAS_LEFT_HORN, true);
++        this.entityData.define(Goat.DATA_HAS_RIGHT_HORN, true);
+     }
+ 
+     public boolean hasLeftHorn() {
+-        return this.entityData.get(DATA_HAS_LEFT_HORN);
++        return (Boolean) this.entityData.get(Goat.DATA_HAS_LEFT_HORN);
+     }
+ 
+     public boolean hasRightHorn() {
+-        return this.entityData.get(DATA_HAS_RIGHT_HORN);
++        return (Boolean) this.entityData.get(Goat.DATA_HAS_RIGHT_HORN);
+     }
+ 
+     public boolean dropHorn() {
+-        boolean bl = this.hasLeftHorn();
+-        boolean bl2 = this.hasRightHorn();
+-        if (!bl && !bl2) {
++        boolean flag = this.hasLeftHorn();
++        boolean flag1 = this.hasRightHorn();
++
++        if (!flag && !flag1) {
+             return false;
+         } else {
+-            EntityDataAccessor<Boolean> entityDataAccessor;
+-            if (!bl) {
+-                entityDataAccessor = DATA_HAS_RIGHT_HORN;
+-            } else if (!bl2) {
+-                entityDataAccessor = DATA_HAS_LEFT_HORN;
++            EntityDataAccessor datawatcherobject;
++
++            if (!flag) {
++                datawatcherobject = Goat.DATA_HAS_RIGHT_HORN;
++            } else if (!flag1) {
++                datawatcherobject = Goat.DATA_HAS_LEFT_HORN;
+             } else {
+-                entityDataAccessor = this.random.nextBoolean() ? DATA_HAS_LEFT_HORN : DATA_HAS_RIGHT_HORN;
++                datawatcherobject = this.random.nextBoolean() ? Goat.DATA_HAS_LEFT_HORN : Goat.DATA_HAS_RIGHT_HORN;
+             }
+ 
+-            this.entityData.set(entityDataAccessor, false);
+-            Vec3 vec3 = this.position();
+-            ItemStack itemStack = this.createHorn();
+-            double d = (double)Mth.randomBetween(this.random, -0.2F, 0.2F);
+-            double e = (double)Mth.randomBetween(this.random, 0.3F, 0.7F);
+-            double f = (double)Mth.randomBetween(this.random, -0.2F, 0.2F);
+-            ItemEntity itemEntity = new ItemEntity(this.level(), vec3.x(), vec3.y(), vec3.z(), itemStack, d, e, f);
+-            this.level().addFreshEntity(itemEntity);
+-            return true;
++            this.entityData.set(datawatcherobject, false);
++            Vec3 vec3d = this.position();
++            ItemStack itemstack = this.createHorn();
++            double d0 = (double) Mth.randomBetween(this.random, -0.2F, 0.2F);
++            double d1 = (double) Mth.randomBetween(this.random, 0.3F, 0.7F);
++            double d2 = (double) Mth.randomBetween(this.random, -0.2F, 0.2F);
++            ItemEntity entityitem = new ItemEntity(this.level(), vec3d.x(), vec3d.y(), vec3d.z(), itemstack, d0, d1, d2);
++
++            return this.spawnAtLocation(entityitem) != null; // Paper - call EntityDropItemEvent by calling spawnAtLocation.
+         }
+     }
+ 
+     public void addHorns() {
+-        this.entityData.set(DATA_HAS_LEFT_HORN, true);
+-        this.entityData.set(DATA_HAS_RIGHT_HORN, true);
++        this.entityData.set(Goat.DATA_HAS_LEFT_HORN, true);
++        this.entityData.set(Goat.DATA_HAS_RIGHT_HORN, true);
+     }
+ 
+     public void removeHorns() {
+-        this.entityData.set(DATA_HAS_LEFT_HORN, false);
+-        this.entityData.set(DATA_HAS_RIGHT_HORN, false);
++        this.entityData.set(Goat.DATA_HAS_LEFT_HORN, false);
++        this.entityData.set(Goat.DATA_HAS_RIGHT_HORN, false);
+     }
+ 
+     public boolean isScreamingGoat() {
+-        return this.entityData.get(DATA_IS_SCREAMING_GOAT);
++        return (Boolean) this.entityData.get(Goat.DATA_IS_SCREAMING_GOAT);
+     }
+ 
+     public void setScreamingGoat(boolean screaming) {
+-        this.entityData.set(DATA_IS_SCREAMING_GOAT, screaming);
++        this.entityData.set(Goat.DATA_IS_SCREAMING_GOAT, screaming);
+     }
+ 
+     public float getRammingXHeadRot() {
+-        return (float)this.lowerHeadTick / 20.0F * 30.0F * ((float)Math.PI / 180F);
++        return (float) this.lowerHeadTick / 20.0F * 30.0F * 0.017453292F;
+     }
+ 
+     public static boolean checkGoatSpawnRules(EntityType<? extends Animal> entityType, LevelAccessor world, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
+@@ -361,4 +392,15 @@
+     protected Vector3f getPassengerAttachmentPoint(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
+         return new Vector3f(0.0F, dimensions.height - 0.1875F * scaleFactor, 0.0F);
+     }
++
++    // Paper start - Goat ram API
++    public void ram(net.minecraft.world.entity.LivingEntity entity) {
++        Brain<Goat> brain = this.getBrain();
++        brain.setMemory(MemoryModuleType.RAM_TARGET, entity.position());
++        brain.eraseMemory(MemoryModuleType.RAM_COOLDOWN_TICKS);
++        brain.eraseMemory(MemoryModuleType.BREED_TARGET);
++        brain.eraseMemory(MemoryModuleType.TEMPTING_PLAYER);
++        brain.setActiveActivityIfPossible(net.minecraft.world.entity.schedule.Activity.RAM);
++    }
++    // Paper end
+ }

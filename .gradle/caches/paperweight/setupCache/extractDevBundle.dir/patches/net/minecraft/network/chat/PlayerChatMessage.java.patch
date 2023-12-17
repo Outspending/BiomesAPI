@@ -1,0 +1,66 @@
+--- a/net/minecraft/network/chat/PlayerChatMessage.java
++++ b/net/minecraft/network/chat/PlayerChatMessage.java
+@@ -15,7 +15,53 @@
+ import net.minecraft.util.SignatureUpdater;
+ import net.minecraft.util.SignatureValidator;
+ 
+-public record PlayerChatMessage(SignedMessageLink link, @Nullable MessageSignature signature, SignedMessageBody signedBody, @Nullable Component unsignedContent, FilterMask filterMask) {
++// Paper start
++public record PlayerChatMessage(SignedMessageLink link, @Nullable MessageSignature signature, SignedMessageBody signedBody, @Nullable Component unsignedContent, FilterMask filterMask, @Nullable net.minecraft.network.chat.ChatDecorator.Result result) {
++    public PlayerChatMessage(SignedMessageLink link, @Nullable MessageSignature signature, SignedMessageBody signedBody, @Nullable Component unsignedContent, FilterMask filterMask) {
++        this(link, signature, signedBody, unsignedContent, filterMask, null);
++    }
++    public PlayerChatMessage withResult(net.minecraft.network.chat.ChatDecorator.Result result) {
++        final PlayerChatMessage msg = this.withUnsignedContent(result.component());
++        return new PlayerChatMessage(msg.link, msg.signature, msg.signedBody, msg.unsignedContent, msg.filterMask, result);
++    }
++    public net.minecraft.network.chat.ChatDecorator.Result requireResult() {
++        return Objects.requireNonNull(this.result, "Requires a decoration result to be set here");
++    }
++    public final class AdventureView implements net.kyori.adventure.chat.SignedMessage {
++        private AdventureView() {
++        }
++        @Override
++        public @org.jetbrains.annotations.NotNull Instant timestamp() {
++            return PlayerChatMessage.this.timeStamp();
++        }
++        @Override
++        public long salt() {
++            return PlayerChatMessage.this.salt();
++        }
++        @Override
++        public @org.jetbrains.annotations.Nullable Signature signature() {
++            return PlayerChatMessage.this.signature == null ? null : PlayerChatMessage.this.signature.adventure();
++        }
++        @Override
++        public net.kyori.adventure.text.@org.jetbrains.annotations.Nullable Component unsignedContent() {
++            return PlayerChatMessage.this.unsignedContent() == null ? null : io.papermc.paper.adventure.PaperAdventure.asAdventure(PlayerChatMessage.this.unsignedContent());
++        }
++        @Override
++        public @org.jetbrains.annotations.NotNull String message() {
++            return PlayerChatMessage.this.signedContent();
++        }
++        @Override
++        public @org.jetbrains.annotations.NotNull net.kyori.adventure.identity.Identity identity() {
++            return net.kyori.adventure.identity.Identity.identity(PlayerChatMessage.this.sender());
++        }
++        public PlayerChatMessage playerChatMessage() {
++            return PlayerChatMessage.this;
++        }
++    }
++    public AdventureView adventureView() {
++        return new AdventureView();
++    }
++    // Paper end
+     public static final MapCodec<PlayerChatMessage> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> {
+         return instance.group(SignedMessageLink.CODEC.fieldOf("link").forGetter(PlayerChatMessage::link), MessageSignature.CODEC.optionalFieldOf("signature").forGetter((message) -> {
+             return Optional.ofNullable(message.signature);
+@@ -40,7 +86,7 @@
+     }
+ 
+     public PlayerChatMessage withUnsignedContent(Component unsignedContent) {
+-        Component component = !unsignedContent.equals(Component.literal(this.signedContent())) ? unsignedContent : null;
++        Component component = !(unsignedContent instanceof io.papermc.paper.adventure.AdventureComponent advComponent ? advComponent.deepConverted() : unsignedContent).equals(Component.literal(this.signedContent())) ? unsignedContent : null; // Paper
+         return new PlayerChatMessage(this.link, this.signature, this.signedBody, component, this.filterMask);
+     }
+ 

@@ -1,0 +1,71 @@
+--- a/net/minecraft/world/level/block/SpawnerBlock.java
++++ b/net/minecraft/world/level/block/SpawnerBlock.java
+@@ -24,6 +24,7 @@
+ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public class SpawnerBlock extends BaseEntityBlock {
++
+     protected SpawnerBlock(BlockBehaviour.Properties settings) {
+         super(settings);
+     }
+@@ -42,11 +43,20 @@
+     @Override
+     public void spawnAfterBreak(BlockState state, ServerLevel world, BlockPos pos, ItemStack tool, boolean dropExperience) {
+         super.spawnAfterBreak(state, world, pos, tool, dropExperience);
+-        if (dropExperience) {
+-            int i = 15 + world.random.nextInt(15) + world.random.nextInt(15);
+-            this.popExperience(world, pos, i);
++        // CraftBukkit start - Delegate to getExpDrop
++    }
++
++    @Override
++    public int getExpDrop(BlockState iblockdata, ServerLevel worldserver, BlockPos blockposition, ItemStack itemstack, boolean flag) {
++        if (flag) {
++            int i = 15 + worldserver.random.nextInt(15) + worldserver.random.nextInt(15);
++
++            // this.popExperience(worldserver, blockposition, i);
++            return i;
+         }
+ 
++        return 0;
++        // CraftBukkit end
+     }
+ 
+     @Override
+@@ -58,24 +68,27 @@
+     public void appendHoverText(ItemStack stack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag options) {
+         super.appendHoverText(stack, world, tooltip, options);
+         Optional<Component> optional = this.getSpawnEntityDisplayName(stack);
++
+         if (optional.isPresent()) {
+-            tooltip.add(optional.get());
++            tooltip.add((Component) optional.get());
+         } else {
+             tooltip.add(CommonComponents.EMPTY);
+             tooltip.add(Component.translatable("block.minecraft.spawner.desc1").withStyle(ChatFormatting.GRAY));
+-            tooltip.add(CommonComponents.space().append(Component.translatable("block.minecraft.spawner.desc2").withStyle(ChatFormatting.BLUE)));
++            tooltip.add(CommonComponents.space().append((Component) Component.translatable("block.minecraft.spawner.desc2").withStyle(ChatFormatting.BLUE)));
+         }
+ 
+     }
+ 
+     private Optional<Component> getSpawnEntityDisplayName(ItemStack stack) {
+-        CompoundTag compoundTag = BlockItem.getBlockEntityData(stack);
+-        if (compoundTag != null && compoundTag.contains("SpawnData", 10)) {
+-            String string = compoundTag.getCompound("SpawnData").getCompound("entity").getString("id");
+-            ResourceLocation resourceLocation = ResourceLocation.tryParse(string);
+-            if (resourceLocation != null) {
+-                return BuiltInRegistries.ENTITY_TYPE.getOptional(resourceLocation).map((entityType) -> {
+-                    return Component.translatable(entityType.getDescriptionId()).withStyle(ChatFormatting.GRAY);
++        CompoundTag nbttagcompound = BlockItem.getBlockEntityData(stack);
++
++        if (nbttagcompound != null && nbttagcompound.contains("SpawnData", 10)) {
++            String s = nbttagcompound.getCompound("SpawnData").getCompound("entity").getString("id");
++            ResourceLocation minecraftkey = ResourceLocation.tryParse(s);
++
++            if (minecraftkey != null) {
++                return BuiltInRegistries.ENTITY_TYPE.getOptional(minecraftkey).map((entitytypes) -> {
++                    return Component.translatable(entitytypes.getDescriptionId()).withStyle(ChatFormatting.GRAY);
+                 });
+             }
+         }

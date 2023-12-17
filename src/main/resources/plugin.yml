@@ -1,0 +1,5 @@
+name: Biomes-Test
+version: '${version}'
+main: me.outspending.biomesapi.Main
+load: STARTUP
+api-version: '1.20'

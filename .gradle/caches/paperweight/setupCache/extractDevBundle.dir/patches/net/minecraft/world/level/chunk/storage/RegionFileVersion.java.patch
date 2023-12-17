@@ -1,0 +1,29 @@
+--- a/net/minecraft/world/level/chunk/storage/RegionFileVersion.java
++++ b/net/minecraft/world/level/chunk/storage/RegionFileVersion.java
+@@ -14,7 +14,7 @@
+ import net.minecraft.util.FastBufferedInputStream;
+ 
+ public class RegionFileVersion {
+-    private static final Int2ObjectMap<RegionFileVersion> VERSIONS = new Int2ObjectOpenHashMap<>();
++    public static final Int2ObjectMap<RegionFileVersion> VERSIONS = new Int2ObjectOpenHashMap<>(); // Paper - private -> public
+     public static final RegionFileVersion VERSION_GZIP = register(new RegionFileVersion(1, (stream) -> {
+         return new FastBufferedInputStream(new GZIPInputStream(stream));
+     }, (stream) -> {
+@@ -30,6 +30,17 @@
+     }, (stream) -> {
+         return stream;
+     }));
++
++    // Paper Start - Configurable region compression format
++    public static RegionFileVersion getCompressionFormat() {
++        return switch (io.papermc.paper.configuration.GlobalConfiguration.get().unsupportedSettings.compressionFormat) {
++            case GZIP -> VERSION_GZIP;
++            case ZLIB -> VERSION_DEFLATE;
++            case NONE -> VERSION_NONE;
++        };
++    }
++    // Paper End
++
+     private final int id;
+     private final RegionFileVersion.StreamWrapper<InputStream> inputWrapper;
+     private final RegionFileVersion.StreamWrapper<OutputStream> outputWrapper;

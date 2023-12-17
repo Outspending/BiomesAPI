@@ -1,0 +1,14 @@
+--- a/net/minecraft/world/level/block/AzaleaBlock.java
++++ b/net/minecraft/world/level/block/AzaleaBlock.java
+@@ -45,4 +45,11 @@
+     public void performBonemeal(ServerLevel world, RandomSource random, BlockPos pos, BlockState state) {
+         TREE_GROWER.growTree(world, world.getChunkSource().getGenerator(), pos, state, random);
+     }
++
++    // Paper start - Fix MC-224454
++    @Override
++    public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, net.minecraft.world.level.pathfinder.PathComputationType type) {
++        return false;
++    }
++    // Paper end
+ }

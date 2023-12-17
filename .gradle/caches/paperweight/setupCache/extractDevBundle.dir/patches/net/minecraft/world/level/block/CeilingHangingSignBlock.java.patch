@@ -1,0 +1,23 @@
+--- a/net/minecraft/world/level/block/CeilingHangingSignBlock.java
++++ b/net/minecraft/world/level/block/CeilingHangingSignBlock.java
+@@ -53,8 +53,10 @@
+     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+         BlockEntity itemStack = world.getBlockEntity(pos);
+         if (itemStack instanceof SignBlockEntity signBlockEntity) {
+-            ItemStack itemStack = player.getItemInHand(hand);
+-            if (this.shouldTryToChainAnotherHangingSign(player, hit, signBlockEntity, itemStack)) {
++            // Paper start - decompile fixes
++            ItemStack itemStack0 = player.getItemInHand(hand);
++            if (this.shouldTryToChainAnotherHangingSign(player, hit, signBlockEntity, itemStack0)) {
++            // Paper end - decompile fixes
+                 return InteractionResult.PASS;
+             }
+         }
+@@ -142,6 +144,6 @@
+     @Nullable
+     @Override
+     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type) {
+-        return createTickerHelper(type, BlockEntityType.HANGING_SIGN, SignBlockEntity::tick);
++        return null; // Paper
+     }
+ }

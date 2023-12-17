@@ -1,0 +1,203 @@
+--- a/net/minecraft/world/level/EntityGetter.java
++++ b/net/minecraft/world/level/EntityGetter.java
+@@ -18,6 +18,18 @@
+ import net.minecraft.world.phys.shapes.VoxelShape;
+ 
+ public interface EntityGetter {
++
++    // Paper start
++    List<Entity> getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate);
++
++    void getEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into);
++
++    void getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into);
++
++    <T> void getEntitiesByClass(Class<? extends T> clazz, Entity except, final AABB box, List<? super T> into,
++                                Predicate<? super T> predicate);
++    // Paper end
++
+     List<Entity> getEntities(@Nullable Entity except, AABB box, Predicate<? super Entity> predicate);
+ 
+     <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> filter, AABB box, Predicate<? super T> predicate);
+@@ -33,17 +45,36 @@
+     }
+ 
+     default boolean isUnobstructed(@Nullable Entity except, VoxelShape shape) {
++        // Paper start - optimise collisions
+         if (shape.isEmpty()) {
+-            return true;
+-        } else {
+-            for(Entity entity : this.getEntities(except, shape.bounds())) {
+-                if (!entity.isRemoved() && entity.blocksBuilding && (except == null || !entity.isPassengerOfSameVehicle(except)) && Shapes.joinIsNotEmpty(shape, Shapes.create(entity.getBoundingBox()), BooleanOp.AND)) {
+-                    return false;
++            return false;
++        }
++
++        final AABB singleAABB = shape.getSingleAABBRepresentation();
++        final List<Entity> entities = this.getEntities(
++                except,
++                singleAABB == null ? shape.bounds() : singleAABB.inflate(-io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON, -io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON, -io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON)
++        );
++
++        for (int i = 0, len = entities.size(); i < len; ++i) {
++            final Entity otherEntity = entities.get(i);
++
++            if (otherEntity.isRemoved() || !otherEntity.blocksBuilding || (except != null && otherEntity.isPassengerOfSameVehicle(except))) {
++                continue;
++            }
++
++            if (singleAABB == null) {
++                final AABB entityBB = otherEntity.getBoundingBox();
++                if (io.papermc.paper.util.CollisionUtil.isEmpty(entityBB) || !io.papermc.paper.util.CollisionUtil.voxelShapeIntersectNoEmpty(shape, entityBB)) {
++                    continue;
+                 }
+             }
+ 
+-            return true;
++            return false;
+         }
++
++        return true;
++        // Paper end - optimise collisions
+     }
+ 
+     default <T extends Entity> List<T> getEntitiesOfClass(Class<T> entityClass, AABB box) {
+@@ -51,25 +82,48 @@
+     }
+ 
+     default List<VoxelShape> getEntityCollisions(@Nullable Entity entity, AABB box) {
+-        if (box.getSize() < 1.0E-7D) {
+-            return List.of();
++        // Paper start - optimise collisions
++        // first behavior change is to correctly check for empty AABB
++        if (io.papermc.paper.util.CollisionUtil.isEmpty(box)) {
++            // reduce indirection by always returning type with same class
++            return new java.util.ArrayList<>();
++        }
++
++        // to comply with vanilla intersection rules, expand by -epsilon so that we only get stuff we definitely collide with.
++        // Vanilla for hard collisions has this backwards, and they expand by +epsilon but this causes terrible problems
++        // specifically with boat collisions.
++        box = box.inflate(-io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON, -io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON, -io.papermc.paper.util.CollisionUtil.COLLISION_EPSILON);
++
++        final List<Entity> entities;
++        if (entity != null && entity.hardCollides()) {
++            entities = this.getEntities(entity, box, null);
+         } else {
+-            Predicate<Entity> predicate = entity == null ? EntitySelector.CAN_BE_COLLIDED_WITH : EntitySelector.NO_SPECTATORS.and(entity::canCollideWith);
+-            List<Entity> list = this.getEntities(entity, box.inflate(1.0E-7D), predicate);
+-            if (list.isEmpty()) {
+-                return List.of();
+-            } else {
+-                ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(list.size());
++            entities = this.getHardCollidingEntities(entity, box, null);
++        }
+ 
+-                for(Entity entity2 : list) {
+-                    builder.add(Shapes.create(entity2.getBoundingBox()));
+-                }
++        final List<VoxelShape> ret = new java.util.ArrayList<>(Math.min(25, entities.size()));
+ 
+-                return builder.build();
++        for (int i = 0, len = entities.size(); i < len; ++i) {
++            final Entity otherEntity = entities.get(i);
++
++            if (otherEntity.isSpectator()) {
++                continue;
++            }
++
++            if ((entity == null && otherEntity.canBeCollidedWith()) || (entity != null && entity.canCollideWith(otherEntity))) {
++                ret.add(Shapes.create(otherEntity.getBoundingBox()));
+             }
+         }
++
++        return ret;
++        // Paper end - optimise collisions
+     }
+ 
++    // Paper start
++    default @Nullable Player findNearbyPlayer(Entity entity, double maxDistance, @Nullable Predicate<Entity> predicate) {
++        return this.getNearestPlayer(entity.getX(), entity.getY(), entity.getZ(), maxDistance, predicate);
++    }
++    // Paper end
+     @Nullable
+     default Player getNearestPlayer(double x, double y, double z, double maxDistance, @Nullable Predicate<Entity> targetPredicate) {
+         double d = -1.0D;
+@@ -88,6 +142,28 @@
+         return player;
+     }
+ 
++    // Paper start
++    default List<org.bukkit.entity.HumanEntity> findNearbyBukkitPlayers(double x, double y, double z, double radius, boolean notSpectator) {
++        return findNearbyBukkitPlayers(x, y, z, radius, notSpectator ? EntitySelector.NO_SPECTATORS : net.minecraft.world.entity.EntitySelector.NO_CREATIVE_OR_SPECTATOR);
++    }
++
++    default List<org.bukkit.entity.HumanEntity> findNearbyBukkitPlayers(double x, double y, double z, double radius, @Nullable Predicate<Entity> predicate) {
++        com.google.common.collect.ImmutableList.Builder<org.bukkit.entity.HumanEntity> builder = com.google.common.collect.ImmutableList.builder();
++
++        for (Player human : this.players()) {
++            if (predicate == null || predicate.test(human)) {
++                double distanceSquared = human.distanceToSqr(x, y, z);
++
++                if (radius < 0.0D || distanceSquared < radius * radius) {
++                    builder.add(human.getBukkitEntity());
++                }
++            }
++        }
++
++        return builder.build();
++    }
++    // Paper end
++
+     @Nullable
+     default Player getNearestPlayer(Entity entity, double maxDistance) {
+         return this.getNearestPlayer(entity.getX(), entity.getY(), entity.getZ(), maxDistance, false);
+@@ -99,6 +175,20 @@
+         return this.getNearestPlayer(x, y, z, maxDistance, predicate);
+     }
+ 
++    // Paper start
++    default boolean hasNearbyAlivePlayerThatAffectsSpawning(double x, double y, double z, double range) {
++        for (Player player : this.players()) {
++            if (EntitySelector.PLAYER_AFFECTS_SPAWNING.test(player)) { // combines NO_SPECTATORS and LIVING_ENTITY_STILL_ALIVE with an "affects spawning" check
++                double distanceSqr = player.distanceToSqr(x, y, z);
++                if (range < 0.0D || distanceSqr < range * range) {
++                    return true;
++                }
++            }
++        }
++        return false;
++    }
++    // Paper end
++
+     default boolean hasNearbyAlivePlayer(double x, double y, double z, double range) {
+         for(Player player : this.players()) {
+             if (EntitySelector.NO_SPECTATORS.test(player) && EntitySelector.LIVING_ENTITY_STILL_ALIVE.test(player)) {
+@@ -140,9 +230,13 @@
+         T livingEntity = null;
+ 
+         for(T livingEntity2 : entityList) {
++            // Paper start - move up
++            // don't check entities outside closest range
++            double e = livingEntity2.distanceToSqr(x, y, z);
++            if (d == -1.0D || e < d) {
++            // Paper end - move up
+             if (targetPredicate.test(entity, livingEntity2)) {
+-                double e = livingEntity2.distanceToSqr(x, y, z);
+-                if (d == -1.0D || e < d) {
++                // Paper - move up
+                     d = e;
+                     livingEntity = livingEntity2;
+                 }
+@@ -190,4 +284,11 @@
+ 
+         return null;
+     }
++
++    // Paper start
++    @Nullable
++    default Player getGlobalPlayerByUUID(UUID uuid) {
++        return this.getPlayerByUUID(uuid);
++    }
++    // Paper end
+ }

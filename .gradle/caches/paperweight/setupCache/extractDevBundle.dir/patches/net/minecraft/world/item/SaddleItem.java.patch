@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/item/SaddleItem.java
++++ b/net/minecraft/world/item/SaddleItem.java
+@@ -18,7 +18,7 @@
+         if (entity instanceof Saddleable saddleable) {
+             if (entity.isAlive() && !saddleable.isSaddled() && saddleable.isSaddleable()) {
+                 if (!user.level().isClientSide) {
+-                    saddleable.equipSaddle(SoundSource.NEUTRAL);
++                    saddleable.equipSaddle(SoundSource.NEUTRAL, stack.copyWithCount(1)); // Paper - Fix saddles losing nbt data - MC-191591
+                     entity.level().gameEvent(entity, GameEvent.EQUIP, entity.position());
+                     stack.shrink(1);
+                 }

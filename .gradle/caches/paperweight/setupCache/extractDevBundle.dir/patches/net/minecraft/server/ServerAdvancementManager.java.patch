@@ -1,0 +1,94 @@
+--- a/net/minecraft/server/ServerAdvancementManager.java
++++ b/net/minecraft/server/ServerAdvancementManager.java
+@@ -1,12 +1,15 @@
++// mc-dev import
+ package net.minecraft.server;
+ 
+ import com.google.common.collect.ImmutableMap;
++import com.google.common.collect.ImmutableMap.Builder;
+ import com.google.gson.Gson;
+ import com.google.gson.GsonBuilder;
+ import com.google.gson.JsonElement;
+ import com.google.gson.JsonObject;
+ import com.mojang.logging.LogUtils;
+ import java.util.Collection;
++import java.util.Iterator;
+ import java.util.Map;
+ import javax.annotation.Nullable;
+ import net.minecraft.advancements.Advancement;
+@@ -24,6 +27,7 @@
+ import org.slf4j.Logger;
+ 
+ public class ServerAdvancementManager extends SimpleJsonResourceReloadListener {
++
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final Gson GSON = (new GsonBuilder()).create();
+     public Map<ResourceLocation, AdvancementHolder> advancements = Map.of();
+@@ -31,39 +35,51 @@
+     private final LootDataManager lootData;
+ 
+     public ServerAdvancementManager(LootDataManager conditionManager) {
+-        super(GSON, "advancements");
++        super(ServerAdvancementManager.GSON, "advancements");
+         this.lootData = conditionManager;
+     }
+ 
+-    @Override
+     protected void apply(Map<ResourceLocation, JsonElement> prepared, ResourceManager manager, ProfilerFiller profiler) {
+-        ImmutableMap.Builder<ResourceLocation, AdvancementHolder> builder = ImmutableMap.builder();
+-        prepared.forEach((id, json) -> {
++        Builder<ResourceLocation, AdvancementHolder> builder = ImmutableMap.builder();
++
++        prepared.forEach((minecraftkey, jsonelement) -> {
++            // Spigot start
++            if (org.spigotmc.SpigotConfig.disabledAdvancements != null && (org.spigotmc.SpigotConfig.disabledAdvancements.contains("*") || org.spigotmc.SpigotConfig.disabledAdvancements.contains(minecraftkey.toString()) || org.spigotmc.SpigotConfig.disabledAdvancements.contains(minecraftkey.getNamespace()))) {
++                return;
++            }
++            // Spigot end
++
+             try {
+-                JsonObject jsonObject = GsonHelper.convertToJsonObject(json, "advancement");
+-                Advancement advancement = Advancement.fromJson(jsonObject, new DeserializationContext(id, this.lootData));
+-                builder.put(id, new AdvancementHolder(id, advancement));
+-            } catch (Exception var6) {
+-                LOGGER.error("Parsing error loading custom advancement {}: {}", id, var6.getMessage());
++                JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "advancement");
++                Advancement advancement = Advancement.fromJson(jsonobject, new DeserializationContext(minecraftkey, this.lootData));
++
++                builder.put(minecraftkey, new AdvancementHolder(minecraftkey, advancement));
++            } catch (Exception exception) {
++                ServerAdvancementManager.LOGGER.error("Parsing error loading custom advancement {}: {}", minecraftkey, exception.getMessage());
+             }
+ 
+         });
+         this.advancements = builder.buildOrThrow();
+-        AdvancementTree advancementTree = new AdvancementTree();
+-        advancementTree.addAll(this.advancements.values());
++        AdvancementTree advancementtree = new AdvancementTree();
+ 
+-        for(AdvancementNode advancementNode : advancementTree.roots()) {
+-            if (advancementNode.holder().value().display().isPresent()) {
+-                TreeNodePosition.run(advancementNode);
++        advancementtree.addAll(this.advancements.values());
++        LOGGER.info("Loaded {} advancements", advancementtree.nodes().size()); // Paper - moved from AdvancementTree#addAll
++        Iterator iterator = advancementtree.roots().iterator();
++
++        while (iterator.hasNext()) {
++            AdvancementNode advancementnode = (AdvancementNode) iterator.next();
++
++            if (advancementnode.holder().value().display().isPresent()) {
++                TreeNodePosition.run(advancementnode);
+             }
+         }
+ 
+-        this.tree = advancementTree;
++        this.tree = advancementtree;
+     }
+ 
+     @Nullable
+     public AdvancementHolder get(ResourceLocation id) {
+-        return this.advancements.get(id);
++        return (AdvancementHolder) this.advancements.get(id);
+     }
+ 
+     public AdvancementTree tree() {

@@ -1,0 +1,23 @@
+--- a/net/minecraft/world/entity/monster/hoglin/Hoglin.java
++++ b/net/minecraft/world/entity/monster/hoglin/Hoglin.java
+@@ -125,7 +125,7 @@
+ 
+     @Override
+     public Brain<Hoglin> getBrain() {
+-        return super.getBrain();
++        return (Brain<Hoglin>) super.getBrain(); // Paper - decompile fix
+     }
+ 
+     @Override
+@@ -241,6 +241,11 @@
+         if (zoglin != null) {
+             zoglin.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 200, 0));
+         }
++        // Paper start - reset to prevent event spam
++        else {
++            this.timeInOverworld = 0;
++        }
++        // Paper end
+ 
+     }
+ 

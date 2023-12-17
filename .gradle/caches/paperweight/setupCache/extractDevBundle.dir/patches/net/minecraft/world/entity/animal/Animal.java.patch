@@ -1,0 +1,231 @@
+--- a/net/minecraft/world/entity/animal/Animal.java
++++ b/net/minecraft/world/entity/animal/Animal.java
+@@ -29,12 +29,19 @@
+ import net.minecraft.world.level.LevelReader;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.pathfinder.BlockPathTypes;
++// CraftBukkit start
++import org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory;
++import org.bukkit.event.entity.EntityBreedEvent;
++import org.bukkit.event.entity.EntityEnterLoveModeEvent;
++// CraftBukkit end
+ 
+ public abstract class Animal extends AgeableMob {
++
+     protected static final int PARENT_AGE_AFTER_BREEDING = 6000;
+     public int inLove;
+     @Nullable
+     public UUID loveCause;
++    public ItemStack breedItem; // CraftBukkit - Add breedItem variable
+ 
+     protected Animal(EntityType<? extends Animal> type, Level world) {
+         super(type, world);
+@@ -61,10 +68,11 @@
+         if (this.inLove > 0) {
+             --this.inLove;
+             if (this.inLove % 10 == 0) {
+-                double d = this.random.nextGaussian() * 0.02D;
+-                double e = this.random.nextGaussian() * 0.02D;
+-                double f = this.random.nextGaussian() * 0.02D;
+-                this.level().addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d, e, f);
++                double d0 = this.random.nextGaussian() * 0.02D;
++                double d1 = this.random.nextGaussian() * 0.02D;
++                double d2 = this.random.nextGaussian() * 0.02D;
++
++                this.level().addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+             }
+         }
+ 
+@@ -75,8 +83,13 @@
+         if (this.isInvulnerableTo(source)) {
+             return false;
+         } else {
++            // CraftBukkit start
++            boolean result = super.hurt(source, amount);
++            if (result) {
+             this.inLove = 0;
+-            return super.hurt(source, amount);
++            }
++            return result;
++            // CraftBukkit end
+         }
+     }
+ 
+@@ -103,7 +116,7 @@
+     }
+ 
+     public static boolean checkAnimalSpawnRules(EntityType<? extends Animal> type, LevelAccessor world, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
+-        return world.getBlockState(pos.below()).is(BlockTags.ANIMALS_SPAWNABLE_ON) && isBrightEnoughToSpawn(world, pos);
++        return world.getBlockState(pos.below()).is(BlockTags.ANIMALS_SPAWNABLE_ON) && Animal.isBrightEnoughToSpawn(world, pos);
+     }
+ 
+     protected static boolean isBrightEnoughToSpawn(BlockAndTintGetter world, BlockPos pos) {
+@@ -131,17 +144,20 @@
+ 
+     @Override
+     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+-        ItemStack itemStack = player.getItemInHand(hand);
+-        if (this.isFood(itemStack)) {
++        ItemStack itemstack = player.getItemInHand(hand);
++
++        if (this.isFood(itemstack)) {
+             int i = this.getAge();
++
+             if (!this.level().isClientSide && i == 0 && this.canFallInLove()) {
+-                this.usePlayerItem(player, hand, itemStack);
+-                this.setInLove(player);
++                final ItemStack breedCopy = itemstack.copy(); // Paper
++                this.usePlayerItem(player, hand, itemstack);
++                this.setInLove(player, breedCopy); // Paper
+                 return InteractionResult.SUCCESS;
+             }
+ 
+             if (this.isBaby()) {
+-                this.usePlayerItem(player, hand, itemStack);
++                this.usePlayerItem(player, hand, itemstack);
+                 this.ageUp(getSpeedUpSecondsWhenFeeding(-i), true);
+                 return InteractionResult.sidedSuccess(this.level().isClientSide);
+             }
+@@ -165,13 +181,28 @@
+         return this.inLove <= 0;
+     }
+ 
++    @Deprecated @io.papermc.paper.annotation.DoNotUse // Paper
+     public void setInLove(@Nullable Player player) {
+-        this.inLove = 600;
++        // Paper start - pass breed stack
++        this.setInLove(player, null);
++    }
++    public void setInLove(@Nullable Player player, @Nullable ItemStack breedItemCopy) {
++        if (breedItemCopy != null) this.breedItem = breedItemCopy;
++        // Paper end
++        // CraftBukkit start
++        EntityEnterLoveModeEvent entityEnterLoveModeEvent = CraftEventFactory.callEntityEnterLoveModeEvent(player, this, 600);
++        if (entityEnterLoveModeEvent.isCancelled()) {
++            this.breedItem = null; // Paper - clear if cancelled
++            return;
++        }
++        this.inLove = entityEnterLoveModeEvent.getTicksInLove();
++        // CraftBukkit end
+         if (player != null) {
+             this.loveCause = player.getUUID();
+         }
++        // Paper - set breed item in better place
+ 
+-        this.level().broadcastEntityEvent(this, (byte)18);
++        this.level().broadcastEntityEvent(this, (byte) 18);
+     }
+ 
+     public void setInLoveTime(int loveTicks) {
+@@ -187,8 +218,9 @@
+         if (this.loveCause == null) {
+             return null;
+         } else {
+-            Player player = this.level().getPlayerByUUID(this.loveCause);
+-            return player instanceof ServerPlayer ? (ServerPlayer)player : null;
++            Player entityhuman = this.level().getPlayerByUUID(this.loveCause);
++
++            return entityhuman instanceof ServerPlayer ? (ServerPlayer) entityhuman : null;
+         }
+     }
+ 
+@@ -201,39 +233,57 @@
+     }
+ 
+     public boolean canMate(Animal other) {
+-        if (other == this) {
+-            return false;
+-        } else if (other.getClass() != this.getClass()) {
+-            return false;
+-        } else {
+-            return this.isInLove() && other.isInLove();
+-        }
++        return other == this ? false : (other.getClass() != this.getClass() ? false : this.isInLove() && other.isInLove());
+     }
+ 
+     public void spawnChildFromBreeding(ServerLevel world, Animal other) {
+-        AgeableMob ageableMob = this.getBreedOffspring(world, other);
+-        if (ageableMob != null) {
+-            ageableMob.setBaby(true);
+-            ageableMob.moveTo(this.getX(), this.getY(), this.getZ(), 0.0F, 0.0F);
+-            this.finalizeSpawnChildFromBreeding(world, other, ageableMob);
+-            world.addFreshEntityWithPassengers(ageableMob);
++        AgeableMob entityageable = this.getBreedOffspring(world, other);
++
++        if (entityageable != null) {
++            entityageable.setBaby(true);
++            entityageable.moveTo(this.getX(), this.getY(), this.getZ(), 0.0F, 0.0F);
++            // CraftBukkit start - call EntityBreedEvent
++            ServerPlayer breeder = Optional.ofNullable(this.getLoveCause()).or(() -> {
++                return Optional.ofNullable(other.getLoveCause());
++            }).orElse(null);
++            int experience = this.getRandom().nextInt(7) + 1;
++            EntityBreedEvent entityBreedEvent = org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callEntityBreedEvent(entityageable, this, other, breeder, this.breedItem, experience);
++            if (entityBreedEvent.isCancelled()) {
++                return;
++            }
++            experience = entityBreedEvent.getExperience();
++            this.finalizeSpawnChildFromBreeding(world, other, entityageable, experience);
++            world.addFreshEntityWithPassengers(entityageable, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.BREEDING);
++            // CraftBukkit end
+         }
+     }
+ 
+     public void finalizeSpawnChildFromBreeding(ServerLevel world, Animal other, @Nullable AgeableMob baby) {
+-        Optional.ofNullable(this.getLoveCause()).or(() -> {
+-            return Optional.ofNullable(other.getLoveCause());
+-        }).ifPresent((player) -> {
+-            player.awardStat(Stats.ANIMALS_BRED);
+-            CriteriaTriggers.BRED_ANIMALS.trigger(player, this, other, baby);
+-        });
++        // CraftBukkit start
++        this.finalizeSpawnChildFromBreeding(world, other, baby, this.getRandom().nextInt(7) + 1);
++    }
++
++    public void finalizeSpawnChildFromBreeding(ServerLevel worldserver, Animal entityanimal, @Nullable AgeableMob entityageable, int experience) {
++        // CraftBukkit end
++        // Paper start
++        ServerPlayer entityplayer = this.getLoveCause();
++        if (entityplayer == null) entityplayer = entityanimal.getLoveCause();
++        if (entityplayer != null) {
++            // Paper end
++            entityplayer.awardStat(Stats.ANIMALS_BRED);
++            CriteriaTriggers.BRED_ANIMALS.trigger(entityplayer, this, entityanimal, entityageable);
++        } // Paper
+         this.setAge(6000);
+-        other.setAge(6000);
++        entityanimal.setAge(6000);
+         this.resetLove();
+-        other.resetLove();
+-        world.broadcastEntityEvent(this, (byte)18);
+-        if (world.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
+-            world.addFreshEntity(new ExperienceOrb(world, this.getX(), this.getY(), this.getZ(), this.getRandom().nextInt(7) + 1));
++        entityanimal.resetLove();
++        worldserver.broadcastEntityEvent(this, (byte) 18);
++        if (worldserver.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
++            // CraftBukkit start - use event experience
++            if (experience > 0) {
++                worldserver.addFreshEntity(new ExperienceOrb(worldserver, this.getX(), this.getY(), this.getZ(), experience, org.bukkit.entity.ExperienceOrb.SpawnReason.BREED, entityplayer, entityageable)); // Paper
++            }
++            // CraftBukkit end
+         }
+ 
+     }
+@@ -241,11 +291,12 @@
+     @Override
+     public void handleEntityEvent(byte status) {
+         if (status == 18) {
+-            for(int i = 0; i < 7; ++i) {
+-                double d = this.random.nextGaussian() * 0.02D;
+-                double e = this.random.nextGaussian() * 0.02D;
+-                double f = this.random.nextGaussian() * 0.02D;
+-                this.level().addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d, e, f);
++            for (int i = 0; i < 7; ++i) {
++                double d0 = this.random.nextGaussian() * 0.02D;
++                double d1 = this.random.nextGaussian() * 0.02D;
++                double d2 = this.random.nextGaussian() * 0.02D;
++
++                this.level().addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+             }
+         } else {
+             super.handleEntityEvent(status);

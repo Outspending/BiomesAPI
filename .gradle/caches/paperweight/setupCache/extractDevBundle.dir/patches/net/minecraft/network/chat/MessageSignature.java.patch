@@ -1,0 +1,16 @@
+--- a/net/minecraft/network/chat/MessageSignature.java
++++ b/net/minecraft/network/chat/MessageSignature.java
+@@ -13,11 +13,12 @@
+ import net.minecraft.util.SignatureValidator;
+ 
+ public record MessageSignature(byte[] bytes) {
++    public net.kyori.adventure.chat.SignedMessage.Signature adventure() { return () -> this.bytes; } // Paper
+     public static final Codec<MessageSignature> CODEC = ExtraCodecs.BASE64_STRING.xmap(MessageSignature::new, MessageSignature::bytes);
+     public static final int BYTES = 256;
+ 
+     public MessageSignature {
+-        Preconditions.checkState(bs.length == 256, "Invalid message signature size");
++        Preconditions.checkState(bytes.length == 256, "Invalid message signature size"); // Paper - decompile fix
+     }
+ 
+     public static MessageSignature read(FriendlyByteBuf buf) {

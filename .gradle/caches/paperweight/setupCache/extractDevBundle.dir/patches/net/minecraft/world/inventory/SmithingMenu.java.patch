@@ -1,0 +1,161 @@
+--- a/net/minecraft/world/inventory/SmithingMenu.java
++++ b/net/minecraft/world/inventory/SmithingMenu.java
+@@ -12,8 +12,10 @@
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.state.BlockState;
++import org.bukkit.craftbukkit.v1_20_R2.inventory.CraftInventoryView; // CraftBukkit
+ 
+ public class SmithingMenu extends ItemCombinerMenu {
++
+     public static final int TEMPLATE_SLOT = 0;
+     public static final int BASE_SLOT = 1;
+     public static final int ADDITIONAL_SLOT = 2;
+@@ -27,6 +29,9 @@
+     @Nullable
+     private RecipeHolder<SmithingRecipe> selectedRecipe;
+     private final List<RecipeHolder<SmithingRecipe>> recipes;
++    // CraftBukkit start
++    private CraftInventoryView bukkitEntity;
++    // CraftBukkit end
+ 
+     public SmithingMenu(int syncId, Inventory playerInventory) {
+         this(syncId, playerInventory, ContainerLevelAccess.NULL);
+@@ -40,17 +45,17 @@
+ 
+     @Override
+     protected ItemCombinerMenuSlotDefinition createInputSlotDefinitions() {
+-        return ItemCombinerMenuSlotDefinition.create().withSlot(0, 8, 48, (stack) -> {
+-            return this.recipes.stream().anyMatch((recipe) -> {
+-                return recipe.value().isTemplateIngredient(stack);
++        return ItemCombinerMenuSlotDefinition.create().withSlot(0, 8, 48, (itemstack) -> {
++            return this.recipes.stream().anyMatch((recipeholder) -> {
++                return ((SmithingRecipe) recipeholder.value()).isTemplateIngredient(itemstack);
+             });
+-        }).withSlot(1, 26, 48, (stack) -> {
+-            return this.recipes.stream().anyMatch((recipe) -> {
+-                return recipe.value().isBaseIngredient(stack);
++        }).withSlot(1, 26, 48, (itemstack) -> {
++            return this.recipes.stream().anyMatch((recipeholder) -> {
++                return ((SmithingRecipe) recipeholder.value()).isBaseIngredient(itemstack);
+             });
+-        }).withSlot(2, 44, 48, (stack) -> {
+-            return this.recipes.stream().anyMatch((recipe) -> {
+-                return recipe.value().isAdditionIngredient(stack);
++        }).withSlot(2, 44, 48, (itemstack) -> {
++            return this.recipes.stream().anyMatch((recipeholder) -> {
++                return ((SmithingRecipe) recipeholder.value()).isAdditionIngredient(itemstack);
+             });
+         }).withResultSlot(3, 98, 48).build();
+     }
+@@ -62,7 +67,7 @@
+ 
+     @Override
+     protected boolean mayPickup(Player player, boolean present) {
+-        return this.selectedRecipe != null && this.selectedRecipe.value().matches(this.inputSlots, this.level);
++        return this.selectedRecipe != null && ((SmithingRecipe) this.selectedRecipe.value()).matches(this.inputSlots, this.level);
+     }
+ 
+     @Override
+@@ -72,8 +77,8 @@
+         this.shrinkStackInSlot(0);
+         this.shrinkStackInSlot(1);
+         this.shrinkStackInSlot(2);
+-        this.access.execute((world, pos) -> {
+-            world.levelEvent(1044, pos, 0);
++        this.access.execute((world, blockposition) -> {
++            world.levelEvent(1044, blockposition, 0);
+         });
+     }
+ 
+@@ -82,10 +87,11 @@
+     }
+ 
+     private void shrinkStackInSlot(int slot) {
+-        ItemStack itemStack = this.inputSlots.getItem(slot);
+-        if (!itemStack.isEmpty()) {
+-            itemStack.shrink(1);
+-            this.inputSlots.setItem(slot, itemStack);
++        ItemStack itemstack = this.inputSlots.getItem(slot);
++
++        if (!itemstack.isEmpty()) {
++            itemstack.shrink(1);
++            this.inputSlots.setItem(slot, itemstack);
+         }
+ 
+     }
+@@ -93,18 +99,23 @@
+     @Override
+     public void createResult() {
+         List<RecipeHolder<SmithingRecipe>> list = this.level.getRecipeManager().getRecipesFor(RecipeType.SMITHING, this.inputSlots, this.level);
++
+         if (list.isEmpty()) {
+-            this.resultSlots.setItem(0, ItemStack.EMPTY);
++            org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callPrepareSmithingEvent(this.getBukkitView(), ItemStack.EMPTY); // CraftBukkit
+         } else {
+-            RecipeHolder<SmithingRecipe> recipeHolder = list.get(0);
+-            ItemStack itemStack = recipeHolder.value().assemble(this.inputSlots, this.level.registryAccess());
+-            if (itemStack.isItemEnabled(this.level.enabledFeatures())) {
+-                this.selectedRecipe = recipeHolder;
+-                this.resultSlots.setRecipeUsed(recipeHolder);
+-                this.resultSlots.setItem(0, itemStack);
++            RecipeHolder<SmithingRecipe> recipeholder = (RecipeHolder) list.get(0);
++            ItemStack itemstack = ((SmithingRecipe) recipeholder.value()).assemble(this.inputSlots, this.level.registryAccess());
++
++            if (itemstack.isItemEnabled(this.level.enabledFeatures())) {
++                this.selectedRecipe = recipeholder;
++                this.resultSlots.setRecipeUsed(recipeholder);
++                // CraftBukkit start
++                org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callPrepareSmithingEvent(this.getBukkitView(), itemstack);
++                // CraftBukkit end
+             }
+         }
+ 
++        org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callPrepareResultEvent(this, RESULT_SLOT); // Paper
+     }
+ 
+     @Override
+@@ -113,13 +124,7 @@
+     }
+ 
+     private static OptionalInt findSlotMatchingIngredient(SmithingRecipe recipe, ItemStack stack) {
+-        if (recipe.isTemplateIngredient(stack)) {
+-            return OptionalInt.of(0);
+-        } else if (recipe.isBaseIngredient(stack)) {
+-            return OptionalInt.of(1);
+-        } else {
+-            return recipe.isAdditionIngredient(stack) ? OptionalInt.of(2) : OptionalInt.empty();
+-        }
++        return recipe.isTemplateIngredient(stack) ? OptionalInt.of(0) : (recipe.isBaseIngredient(stack) ? OptionalInt.of(1) : (recipe.isAdditionIngredient(stack) ? OptionalInt.of(2) : OptionalInt.empty()));
+     }
+ 
+     @Override
+@@ -133,10 +138,24 @@
+     }
+ 
+     private OptionalInt findSlotToQuickMoveTo(ItemStack stack) {
+-        return this.recipes.stream().flatMapToInt((recipe) -> {
+-            return findSlotMatchingIngredient(recipe.value(), stack).stream();
+-        }).filter((slot) -> {
+-            return !this.getSlot(slot).hasItem();
++        return this.recipes.stream().flatMapToInt((recipeholder) -> {
++            return SmithingMenu.findSlotMatchingIngredient((SmithingRecipe) recipeholder.value(), stack).stream();
++        }).filter((i) -> {
++            return !this.getSlot(i).hasItem();
+         }).findFirst();
+     }
++
++    // CraftBukkit start
++    @Override
++    public CraftInventoryView getBukkitView() {
++        if (this.bukkitEntity != null) {
++            return this.bukkitEntity;
++        }
++
++        org.bukkit.craftbukkit.v1_20_R2.inventory.CraftInventory inventory = new org.bukkit.craftbukkit.v1_20_R2.inventory.CraftInventorySmithing(
++                this.access.getLocation(), this.inputSlots, this.resultSlots);
++        this.bukkitEntity = new CraftInventoryView(this.player.getBukkitEntity(), inventory, this);
++        return this.bukkitEntity;
++    }
++    // CraftBukkit end
+ }

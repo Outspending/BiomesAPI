@@ -1,0 +1,49 @@
+--- a/net/minecraft/world/item/SignItem.java
++++ b/net/minecraft/world/item/SignItem.java
+@@ -12,6 +12,9 @@
+ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public class SignItem extends StandingAndWallBlockItem {
++
++    public static BlockPos openSign; // CraftBukkit
++
+     public SignItem(Item.Properties settings, Block standingBlock, Block wallBlock) {
+         super(standingBlock, wallBlock, settings, Direction.DOWN);
+     }
+@@ -22,19 +25,26 @@
+ 
+     @Override
+     protected boolean updateCustomBlockEntityTag(BlockPos pos, Level world, @Nullable Player player, ItemStack stack, BlockState state) {
+-        boolean bl = super.updateCustomBlockEntityTag(pos, world, player, stack, state);
+-        if (!world.isClientSide && !bl && player != null) {
+-            BlockEntity var9 = world.getBlockEntity(pos);
+-            if (var9 instanceof SignBlockEntity) {
+-                SignBlockEntity signBlockEntity = (SignBlockEntity)var9;
+-                Block var10 = world.getBlockState(pos).getBlock();
+-                if (var10 instanceof SignBlock) {
+-                    SignBlock signBlock = (SignBlock)var10;
+-                    signBlock.openTextEdit(player, signBlockEntity, true);
++        boolean flag = super.updateCustomBlockEntityTag(pos, world, player, stack, state);
++
++        if (!world.isClientSide && !flag && player != null) {
++            BlockEntity tileentity = world.getBlockEntity(pos);
++
++            if (tileentity instanceof SignBlockEntity) {
++                SignBlockEntity tileentitysign = (SignBlockEntity) tileentity;
++                Block block = world.getBlockState(pos).getBlock();
++
++                if (block instanceof SignBlock) {
++                    SignBlock blocksign = (SignBlock) block;
++
++                    // CraftBukkit start - SPIGOT-4678
++                    // blocksign.openTextEdit(entityhuman, tileentitysign, true);
++                    SignItem.openSign = pos;
++                    // CraftBukkit end
+                 }
+             }
+         }
+ 
+-        return bl;
++        return flag;
+     }
+ }

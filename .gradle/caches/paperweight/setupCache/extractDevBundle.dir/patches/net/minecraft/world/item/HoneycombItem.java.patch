@@ -1,0 +1,17 @@
+--- a/net/minecraft/world/item/HoneycombItem.java
++++ b/net/minecraft/world/item/HoneycombItem.java
+@@ -39,6 +39,14 @@
+         return getWaxed(blockState).map((state) -> {
+             Player player = context.getPlayer();
+             ItemStack itemStack = context.getItemInHand();
++            // Paper start - EntityChangeBlockEvent
++            if (!org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callEntityChangeBlockEvent(player, blockPos, state)) {
++                if (!player.isCreative()) {
++                    player.containerMenu.sendAllDataToRemote();
++                }
++                return InteractionResult.PASS;
++            }
++            // Paper end
+             if (player instanceof ServerPlayer) {
+                 CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger((ServerPlayer)player, blockPos, itemStack);
+             }

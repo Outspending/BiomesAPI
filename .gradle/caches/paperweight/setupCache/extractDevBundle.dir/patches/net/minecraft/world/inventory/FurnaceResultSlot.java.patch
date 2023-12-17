@@ -1,0 +1,32 @@
+--- a/net/minecraft/world/inventory/FurnaceResultSlot.java
++++ b/net/minecraft/world/inventory/FurnaceResultSlot.java
+@@ -7,6 +7,7 @@
+ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
+ 
+ public class FurnaceResultSlot extends Slot {
++
+     private final Player player;
+     private int removeCount;
+ 
+@@ -44,11 +45,16 @@
+     @Override
+     protected void checkTakeAchievements(ItemStack stack) {
+         stack.onCraftedBy(this.player.level(), this.player, this.removeCount);
+-        Player var4 = this.player;
+-        if (var4 instanceof ServerPlayer serverPlayer) {
+-            Container var5 = this.container;
+-            if (var5 instanceof AbstractFurnaceBlockEntity abstractFurnaceBlockEntity) {
+-                abstractFurnaceBlockEntity.awardUsedRecipesAndPopExperience(serverPlayer);
++        Player entityhuman = this.player;
++
++        if (entityhuman instanceof ServerPlayer) {
++            ServerPlayer entityplayer = (ServerPlayer) entityhuman;
++            Container iinventory = this.container;
++
++            if (iinventory instanceof AbstractFurnaceBlockEntity) {
++                AbstractFurnaceBlockEntity tileentityfurnace = (AbstractFurnaceBlockEntity) iinventory;
++
++                tileentityfurnace.awardUsedRecipesAndPopExperience(entityplayer, stack, this.removeCount); // CraftBukkit
+             }
+         }
+ 

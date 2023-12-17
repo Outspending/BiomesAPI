@@ -1,0 +1,39 @@
+--- a/net/minecraft/world/level/block/MagmaBlock.java
++++ b/net/minecraft/world/level/block/MagmaBlock.java
+@@ -13,6 +13,7 @@
+ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public class MagmaBlock extends Block {
++
+     private static final int BUBBLE_COLUMN_CHECK_DELAY = 20;
+ 
+     public MagmaBlock(BlockBehaviour.Properties settings) {
+@@ -21,8 +22,10 @@
+ 
+     @Override
+     public void stepOn(Level world, BlockPos pos, BlockState state, Entity entity) {
+-        if (!entity.isSteppingCarefully() && entity instanceof LivingEntity && !EnchantmentHelper.hasFrostWalker((LivingEntity)entity)) {
++        if (!entity.isSteppingCarefully() && entity instanceof LivingEntity && !EnchantmentHelper.hasFrostWalker((LivingEntity) entity)) {
++            org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.blockDamage = world.getWorld().getBlockAt(pos.getX(), pos.getY(), pos.getZ()); // CraftBukkit
+             entity.hurt(world.damageSources().hotFloor(), 1.0F);
++            org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.blockDamage = null; // CraftBukkit
+         }
+ 
+         super.stepOn(world, pos, state, entity);
+@@ -36,7 +39,7 @@
+     @Override
+     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+         if (direction == Direction.UP && neighborState.is(Blocks.WATER)) {
+-            world.scheduleTick(pos, this, 20);
++            world.scheduleTick(pos, (Block) this, 20);
+         }
+ 
+         return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+@@ -44,6 +47,6 @@
+ 
+     @Override
+     public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean notify) {
+-        world.scheduleTick(pos, this, 20);
++        world.scheduleTick(pos, (Block) this, 20);
+     }
+ }

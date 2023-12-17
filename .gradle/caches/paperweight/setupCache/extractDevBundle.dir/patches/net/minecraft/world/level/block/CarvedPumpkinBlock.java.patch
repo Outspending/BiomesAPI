@@ -1,0 +1,189 @@
+--- a/net/minecraft/world/level/block/CarvedPumpkinBlock.java
++++ b/net/minecraft/world/level/block/CarvedPumpkinBlock.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.level.block;
+ 
++import java.util.Iterator;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ import net.minecraft.advancements.CriteriaTriggers;
+@@ -21,8 +22,12 @@
+ import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
+ import net.minecraft.world.level.block.state.predicate.BlockStatePredicate;
+ import net.minecraft.world.level.block.state.properties.DirectionProperty;
++// CraftBukkit start
++import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
++// CraftBukkit end
+ 
+ public class CarvedPumpkinBlock extends HorizontalDirectionalBlock {
++
+     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+     @Nullable
+     private BlockPattern snowGolemBase;
+@@ -32,13 +37,13 @@
+     private BlockPattern ironGolemBase;
+     @Nullable
+     private BlockPattern ironGolemFull;
+-    private static final Predicate<BlockState> PUMPKINS_PREDICATE = (state) -> {
+-        return state != null && (state.is(Blocks.CARVED_PUMPKIN) || state.is(Blocks.JACK_O_LANTERN));
++    private static final Predicate<BlockState> PUMPKINS_PREDICATE = (iblockdata) -> {
++        return iblockdata != null && (iblockdata.is(Blocks.CARVED_PUMPKIN) || iblockdata.is(Blocks.JACK_O_LANTERN));
+     };
+ 
+     protected CarvedPumpkinBlock(BlockBehaviour.Properties settings) {
+         super(settings);
+-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
++        this.registerDefaultState((BlockState) ((BlockState) this.stateDefinition.any()).setValue(CarvedPumpkinBlock.FACING, Direction.NORTH));
+     }
+ 
+     @Override
+@@ -53,19 +58,23 @@
+     }
+ 
+     private void trySpawnGolem(Level world, BlockPos pos) {
+-        BlockPattern.BlockPatternMatch blockPatternMatch = this.getOrCreateSnowGolemFull().find(world, pos);
+-        if (blockPatternMatch != null) {
+-            SnowGolem snowGolem = EntityType.SNOW_GOLEM.create(world);
+-            if (snowGolem != null) {
+-                spawnGolemInWorld(world, blockPatternMatch, snowGolem, blockPatternMatch.getBlock(0, 2, 0).getPos());
++        BlockPattern.BlockPatternMatch shapedetector_shapedetectorcollection = this.getOrCreateSnowGolemFull().find(world, pos);
++
++        if (shapedetector_shapedetectorcollection != null) {
++            SnowGolem entitysnowman = (SnowGolem) EntityType.SNOW_GOLEM.create(world);
++
++            if (entitysnowman != null) {
++                CarvedPumpkinBlock.spawnGolemInWorld(world, shapedetector_shapedetectorcollection, entitysnowman, shapedetector_shapedetectorcollection.getBlock(0, 2, 0).getPos());
+             }
+         } else {
+-            BlockPattern.BlockPatternMatch blockPatternMatch2 = this.getOrCreateIronGolemFull().find(world, pos);
+-            if (blockPatternMatch2 != null) {
+-                IronGolem ironGolem = EntityType.IRON_GOLEM.create(world);
+-                if (ironGolem != null) {
+-                    ironGolem.setPlayerCreated(true);
+-                    spawnGolemInWorld(world, blockPatternMatch2, ironGolem, blockPatternMatch2.getBlock(1, 2, 0).getPos());
++            BlockPattern.BlockPatternMatch shapedetector_shapedetectorcollection1 = this.getOrCreateIronGolemFull().find(world, pos);
++
++            if (shapedetector_shapedetectorcollection1 != null) {
++                IronGolem entityirongolem = (IronGolem) EntityType.IRON_GOLEM.create(world);
++
++                if (entityirongolem != null) {
++                    entityirongolem.setPlayerCreated(true);
++                    CarvedPumpkinBlock.spawnGolemInWorld(world, shapedetector_shapedetectorcollection1, entityirongolem, shapedetector_shapedetectorcollection1.getBlock(1, 2, 0).getPos());
+                 }
+             }
+         }
+@@ -73,33 +82,53 @@
+     }
+ 
+     private static void spawnGolemInWorld(Level world, BlockPattern.BlockPatternMatch patternResult, Entity entity, BlockPos pos) {
+-        clearPatternBlocks(world, patternResult);
+-        entity.moveTo((double)pos.getX() + 0.5D, (double)pos.getY() + 0.05D, (double)pos.getZ() + 0.5D, 0.0F, 0.0F);
+-        world.addFreshEntity(entity);
++        // clearPatternBlocks(world, shapedetector_shapedetectorcollection); // CraftBukkit - moved down
++        entity.moveTo((double) pos.getX() + 0.5D, (double) pos.getY() + 0.05D, (double) pos.getZ() + 0.5D, 0.0F, 0.0F);
++        // CraftBukkit start
++        // Paper start - correct spawn reason
++        final SpawnReason spawnReason;
++        if (entity.getType() == EntityType.SNOW_GOLEM) {
++            spawnReason = SpawnReason.BUILD_SNOWMAN;
++        } else if (entity.getType() == EntityType.IRON_GOLEM) {
++            spawnReason = SpawnReason.BUILD_IRONGOLEM;
++        } else {
++            spawnReason = SpawnReason.DEFAULT;
++        }
++        if (!world.addFreshEntity(entity, spawnReason)) {
++        // Paper end
++            return;
++        }
++        CarvedPumpkinBlock.clearPatternBlocks(world, patternResult); // CraftBukkit - from above
++        // CraftBukkit end
++        Iterator iterator = world.getEntitiesOfClass(ServerPlayer.class, entity.getBoundingBox().inflate(5.0D)).iterator();
+ 
+-        for(ServerPlayer serverPlayer : world.getEntitiesOfClass(ServerPlayer.class, entity.getBoundingBox().inflate(5.0D))) {
+-            CriteriaTriggers.SUMMONED_ENTITY.trigger(serverPlayer, entity);
++        while (iterator.hasNext()) {
++            ServerPlayer entityplayer = (ServerPlayer) iterator.next();
++
++            CriteriaTriggers.SUMMONED_ENTITY.trigger(entityplayer, entity);
+         }
+ 
+-        updatePatternBlocks(world, patternResult);
++        CarvedPumpkinBlock.updatePatternBlocks(world, patternResult);
+     }
+ 
+     public static void clearPatternBlocks(Level world, BlockPattern.BlockPatternMatch patternResult) {
+-        for(int i = 0; i < patternResult.getWidth(); ++i) {
+-            for(int j = 0; j < patternResult.getHeight(); ++j) {
+-                BlockInWorld blockInWorld = patternResult.getBlock(i, j, 0);
+-                world.setBlock(blockInWorld.getPos(), Blocks.AIR.defaultBlockState(), 2);
+-                world.levelEvent(2001, blockInWorld.getPos(), Block.getId(blockInWorld.getState()));
++        for (int i = 0; i < patternResult.getWidth(); ++i) {
++            for (int j = 0; j < patternResult.getHeight(); ++j) {
++                BlockInWorld shapedetectorblock = patternResult.getBlock(i, j, 0);
++
++                world.setBlock(shapedetectorblock.getPos(), Blocks.AIR.defaultBlockState(), 2);
++                world.levelEvent(2001, shapedetectorblock.getPos(), Block.getId(shapedetectorblock.getState()));
+             }
+         }
+ 
+     }
+ 
+     public static void updatePatternBlocks(Level world, BlockPattern.BlockPatternMatch patternResult) {
+-        for(int i = 0; i < patternResult.getWidth(); ++i) {
+-            for(int j = 0; j < patternResult.getHeight(); ++j) {
+-                BlockInWorld blockInWorld = patternResult.getBlock(i, j, 0);
+-                world.blockUpdated(blockInWorld.getPos(), Blocks.AIR);
++        for (int i = 0; i < patternResult.getWidth(); ++i) {
++            for (int j = 0; j < patternResult.getHeight(); ++j) {
++                BlockInWorld shapedetectorblock = patternResult.getBlock(i, j, 0);
++
++                world.blockUpdated(shapedetectorblock.getPos(), Blocks.AIR);
+             }
+         }
+ 
+@@ -107,12 +136,12 @@
+ 
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+-        return this.defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite());
++        return (BlockState) this.defaultBlockState().setValue(CarvedPumpkinBlock.FACING, ctx.getHorizontalDirection().getOpposite());
+     }
+ 
+     @Override
+     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+-        builder.add(FACING);
++        builder.add(CarvedPumpkinBlock.FACING);
+     }
+ 
+     private BlockPattern getOrCreateSnowGolemBase() {
+@@ -125,7 +154,7 @@
+ 
+     private BlockPattern getOrCreateSnowGolemFull() {
+         if (this.snowGolemFull == null) {
+-            this.snowGolemFull = BlockPatternBuilder.start().aisle("^", "#", "#").where('^', BlockInWorld.hasState(PUMPKINS_PREDICATE)).where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.SNOW_BLOCK))).build();
++            this.snowGolemFull = BlockPatternBuilder.start().aisle("^", "#", "#").where('^', BlockInWorld.hasState(CarvedPumpkinBlock.PUMPKINS_PREDICATE)).where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.SNOW_BLOCK))).build();
+         }
+ 
+         return this.snowGolemFull;
+@@ -133,8 +162,8 @@
+ 
+     private BlockPattern getOrCreateIronGolemBase() {
+         if (this.ironGolemBase == null) {
+-            this.ironGolemBase = BlockPatternBuilder.start().aisle("~ ~", "###", "~#~").where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.IRON_BLOCK))).where('~', (pos) -> {
+-                return pos.getState().isAir();
++            this.ironGolemBase = BlockPatternBuilder.start().aisle("~ ~", "###", "~#~").where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.IRON_BLOCK))).where('~', (shapedetectorblock) -> {
++                return shapedetectorblock.getState().isAir();
+             }).build();
+         }
+ 
+@@ -143,8 +172,8 @@
+ 
+     private BlockPattern getOrCreateIronGolemFull() {
+         if (this.ironGolemFull == null) {
+-            this.ironGolemFull = BlockPatternBuilder.start().aisle("~^~", "###", "~#~").where('^', BlockInWorld.hasState(PUMPKINS_PREDICATE)).where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.IRON_BLOCK))).where('~', (pos) -> {
+-                return pos.getState().isAir();
++            this.ironGolemFull = BlockPatternBuilder.start().aisle("~^~", "###", "~#~").where('^', BlockInWorld.hasState(CarvedPumpkinBlock.PUMPKINS_PREDICATE)).where('#', BlockInWorld.hasState(BlockStatePredicate.forBlock(Blocks.IRON_BLOCK))).where('~', (shapedetectorblock) -> {
++                return shapedetectorblock.getState().isAir();
+             }).build();
+         }
+ 

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.30/f195ee86e6c896ea47a1d39defbe20eb59cd149d/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="me.outspending.Biomes-Test.BiomesAPI-NMS.main" />
+        <module name="me.outspending.Biomes-Test.main" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="Biomes-Test.BiomesAPI-1.19_R1" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R1.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R1.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R2" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R2.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R2.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R3" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R3.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.19_R3.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R1" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R1.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R1.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R2" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R2.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R2.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R3" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R3.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI-1.20_R3.test" target="17" />
+      <module name="Biomes-Test.BiomesAPI.main" target="17" />
+      <module name="Biomes-Test.BiomesAPI.test" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

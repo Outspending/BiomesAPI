@@ -1,0 +1,10 @@
+--- a/net/minecraft/world/phys/shapes/SliceShape.java
++++ b/net/minecraft/world/phys/shapes/SliceShape.java
+@@ -12,6 +12,7 @@
+         super(makeSlice(shape.shape, axis, sliceWidth));
+         this.delegate = shape;
+         this.axis = axis;
++        this.initCache(); // Paper - optimise collisions
+     }
+ 
+     private static DiscreteVoxelShape makeSlice(DiscreteVoxelShape voxelSet, Direction.Axis axis, int sliceWidth) {

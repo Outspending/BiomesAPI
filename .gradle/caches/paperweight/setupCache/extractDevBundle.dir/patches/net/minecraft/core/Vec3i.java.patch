@@ -1,0 +1,65 @@
+--- a/net/minecraft/core/Vec3i.java
++++ b/net/minecraft/core/Vec3i.java
+@@ -19,9 +19,9 @@
+         return IntStream.of(vec.getX(), vec.getY(), vec.getZ());
+     });
+     public static final Vec3i ZERO = new Vec3i(0, 0, 0);
+-    private int x;
+-    private int y;
+-    private int z;
++    protected int x; // Paper - protected
++    protected int y; // Paper - protected
++    protected int z; // Paper - protected
+ 
+     public static Codec<Vec3i> offsetCodec(int maxAbsValue) {
+         return ExtraCodecs.validate(CODEC, (vec) -> {
+@@ -31,6 +31,12 @@
+         });
+     }
+ 
++    // Paper start
++    public final boolean isInsideBuildHeightAndWorldBoundsHorizontal(net.minecraft.world.level.LevelHeightAccessor levelHeightAccessor) {
++        return getX() >= -30000000 && getZ() >= -30000000 && getX() < 30000000 && getZ() < 30000000 && !levelHeightAccessor.isOutsideBuildHeight(getY());
++    }
++    // Paper end
++
+     public Vec3i(int x, int y, int z) {
+         this.x = x;
+         this.y = y;
+@@ -38,7 +44,7 @@
+     }
+ 
+     @Override
+-    public boolean equals(Object object) {
++    public final boolean equals(Object object) { // Paper
+         if (this == object) {
+             return true;
+         } else if (!(object instanceof Vec3i)) {
+@@ -56,7 +62,7 @@
+     }
+ 
+     @Override
+-    public int hashCode() {
++    public final int hashCode() { // Paper
+         return (this.getY() + this.getZ() * 31) * 31 + this.getX();
+     }
+ 
+@@ -69,15 +75,15 @@
+         }
+     }
+ 
+-    public int getX() {
++    public final int getX() { // Paper
+         return this.x;
+     }
+ 
+-    public int getY() {
++    public final int getY() { // Paper
+         return this.y;
+     }
+ 
+-    public int getZ() {
++    public final int getZ() { // Paper
+         return this.z;
+     }
+ 

@@ -1,0 +1,3 @@
+rootProject.name = 'Biomes-Test'
+include 'BiomesAPI-NMS'
+

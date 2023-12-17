@@ -1,0 +1,28 @@
+--- a/net/minecraft/world/item/crafting/CustomRecipe.java
++++ b/net/minecraft/world/item/crafting/CustomRecipe.java
+@@ -3,7 +3,13 @@
+ import net.minecraft.core.RegistryAccess;
+ import net.minecraft.world.item.ItemStack;
+ 
++// CraftBukkit start
++import org.bukkit.NamespacedKey;
++import org.bukkit.inventory.Recipe;
++// CraftBukkit end
++
+ public abstract class CustomRecipe implements CraftingRecipe {
++
+     private final CraftingBookCategory category;
+ 
+     public CustomRecipe(CraftingBookCategory category) {
+@@ -24,4 +30,11 @@
+     public CraftingBookCategory category() {
+         return this.category;
+     }
++
++    // CraftBukkit start
++    @Override
++    public Recipe toBukkitRecipe(NamespacedKey id) {
++        return new org.bukkit.craftbukkit.v1_20_R2.inventory.CraftComplexRecipe(id, this);
++    }
++    // CraftBukkit end
+ }

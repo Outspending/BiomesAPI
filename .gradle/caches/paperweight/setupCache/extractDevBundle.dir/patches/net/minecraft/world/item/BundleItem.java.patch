@@ -1,0 +1,20 @@
+--- a/net/minecraft/world/item/BundleItem.java
++++ b/net/minecraft/world/item/BundleItem.java
+@@ -52,7 +52,7 @@
+                 });
+             } else if (itemStack.getItem().canFitInsideContainerItems()) {
+                 int i = (64 - getContentWeight(stack)) / getWeight(itemStack);
+-                int j = add(stack, slot.safeTake(itemStack.getCount(), i, player));
++                int j = add(stack, slot.safeTake(itemStack.getCount(), Math.max(0, i), player)); // Paper - prevent item addition on overfilled bundles - safeTake will yield EMPTY for amount == 0.
+                 if (j > 0) {
+                     this.playInsertSound(player);
+                 }
+@@ -121,7 +121,7 @@
+             int i = getContentWeight(bundle);
+             int j = getWeight(stack);
+             int k = Math.min(stack.getCount(), (64 - i) / j);
+-            if (k == 0) {
++            if (k <= 0) { // Paper - prevent item addition on overfilled bundles
+                 return 0;
+             } else {
+                 ListTag listTag = compoundTag.getList("Items", 10);

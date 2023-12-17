@@ -1,0 +1,174 @@
+--- a/net/minecraft/world/entity/animal/frog/Tadpole.java
++++ b/net/minecraft/world/entity/animal/frog/Tadpole.java
+@@ -36,6 +36,7 @@
+ import net.minecraft.world.level.Level;
+ 
+ public class Tadpole extends AbstractFish {
++
+     @VisibleForTesting
+     public static int ticksToBeFrog = Math.abs(-24000);
+     public static float HITBOX_WIDTH = 0.4F;
+@@ -43,6 +44,7 @@
+     public int age;
+     protected static final ImmutableList<SensorType<? extends Sensor<? super Tadpole>>> SENSOR_TYPES = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.HURT_BY, SensorType.FROG_TEMPTATIONS);
+     protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.of(MemoryModuleType.LOOK_TARGET, MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES, MemoryModuleType.WALK_TARGET, MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleType.PATH, MemoryModuleType.NEAREST_VISIBLE_ADULT, MemoryModuleType.TEMPTATION_COOLDOWN_TICKS, MemoryModuleType.IS_TEMPTED, MemoryModuleType.TEMPTING_PLAYER, MemoryModuleType.BREED_TARGET, MemoryModuleType.IS_PANICKING);
++    public boolean ageLocked; // Paper
+ 
+     public Tadpole(EntityType<? extends AbstractFish> type, Level world) {
+         super(type, world);
+@@ -57,7 +59,7 @@
+ 
+     @Override
+     protected Brain.Provider<Tadpole> brainProvider() {
+-        return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
++        return Brain.provider(Tadpole.MEMORY_TYPES, Tadpole.SENSOR_TYPES);
+     }
+ 
+     @Override
+@@ -67,7 +69,7 @@
+ 
+     @Override
+     public Brain<Tadpole> getBrain() {
+-        return super.getBrain();
++        return (Brain<Tadpole>) super.getBrain(); // CraftBukkit - decompile error
+     }
+ 
+     @Override
+@@ -78,7 +80,7 @@
+     @Override
+     protected void customServerAiStep() {
+         this.level().getProfiler().push("tadpoleBrain");
+-        this.getBrain().tick((ServerLevel)this.level(), this);
++        this.getBrain().tick((ServerLevel) this.level(), this);
+         this.level().getProfiler().pop();
+         this.level().getProfiler().push("tadpoleActivityUpdate");
+         TadpoleAi.updateActivity(this);
+@@ -93,7 +95,7 @@
+     @Override
+     public void aiStep() {
+         super.aiStep();
+-        if (!this.level().isClientSide) {
++        if (!this.level().isClientSide && !this.ageLocked) { // Paper
+             this.setAge(this.age + 1);
+         }
+ 
+@@ -103,12 +105,14 @@
+     public void addAdditionalSaveData(CompoundTag nbt) {
+         super.addAdditionalSaveData(nbt);
+         nbt.putInt("Age", this.age);
++        nbt.putBoolean("AgeLocked", this.ageLocked); // Paper
+     }
+ 
+     @Override
+     public void readAdditionalSaveData(CompoundTag nbt) {
+         super.readAdditionalSaveData(nbt);
+         this.setAge(nbt.getInt("Age"));
++        this.ageLocked = nbt.getBoolean("AgeLocked"); // Paper
+     }
+ 
+     @Nullable
+@@ -131,12 +135,13 @@
+ 
+     @Override
+     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+-        ItemStack itemStack = player.getItemInHand(hand);
+-        if (this.isFood(itemStack)) {
+-            this.feed(player, itemStack);
++        ItemStack itemstack = player.getItemInHand(hand);
++
++        if (this.isFood(itemstack)) {
++            this.feed(player, itemstack);
+             return InteractionResult.sidedSuccess(this.level().isClientSide);
+         } else {
+-            return Bucketable.bucketMobPickup(player, hand, this).orElse(super.mobInteract(player, hand));
++            return (InteractionResult) Bucketable.bucketMobPickup(player, hand, this).orElse(super.mobInteract(player, hand));
+         }
+     }
+ 
+@@ -152,14 +157,15 @@
+     }
+ 
+     @Override
+-    public void setFromBucket(boolean fromBucket) {
+-    }
++    public void setFromBucket(boolean fromBucket) {}
+ 
+     @Override
+     public void saveToBucketTag(ItemStack stack) {
+         Bucketable.saveDefaultDataToBucketTag(this, stack);
+-        CompoundTag compoundTag = stack.getOrCreateTag();
+-        compoundTag.putInt("Age", this.getAge());
++        CompoundTag nbttagcompound = stack.getOrCreateTag();
++
++        nbttagcompound.putInt("Age", this.getAge());
++        nbttagcompound.putBoolean("AgeLocked", this.ageLocked); // Paper
+     }
+ 
+     @Override
+@@ -169,6 +175,7 @@
+             this.setAge(nbt.getInt("Age"));
+         }
+ 
++        this.ageLocked = nbt.getBoolean("AgeLocked"); // Paper
+     }
+ 
+     @Override
+@@ -203,24 +210,28 @@
+     }
+ 
+     private void ageUp(int seconds) {
++        if (this.ageLocked) return; // Paper
+         this.setAge(this.age + seconds * 20);
+     }
+ 
+     private void setAge(int tadpoleAge) {
+         this.age = tadpoleAge;
+-        if (this.age >= ticksToBeFrog) {
++        if (this.age >= Tadpole.ticksToBeFrog) {
+             this.ageUp();
+         }
+ 
+     }
+ 
+     private void ageUp() {
+-        Level frog = this.level();
+-        if (frog instanceof ServerLevel serverLevel) {
+-            Frog frog = EntityType.FROG.create(this.level());
++        Level world = this.level();
++
++        if (world instanceof ServerLevel) {
++            ServerLevel worldserver = (ServerLevel) world;
++            Frog frog = (Frog) EntityType.FROG.create(this.level());
++
+             if (frog != null) {
+                 frog.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+-                frog.finalizeSpawn(serverLevel, this.level().getCurrentDifficultyAt(frog.blockPosition()), MobSpawnType.CONVERSION, (SpawnGroupData)null, (CompoundTag)null);
++                frog.finalizeSpawn(worldserver, this.level().getCurrentDifficultyAt(frog.blockPosition()), MobSpawnType.CONVERSION, (SpawnGroupData) null, (CompoundTag) null);
+                 frog.setNoAi(this.isNoAi());
+                 if (this.hasCustomName()) {
+                     frog.setCustomName(this.getCustomName());
+@@ -228,8 +239,14 @@
+                 }
+ 
+                 frog.setPersistenceRequired();
++                // CraftBukkit start
++                if (org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callEntityTransformEvent(this, frog, org.bukkit.event.entity.EntityTransformEvent.TransformReason.METAMORPHOSIS).isCancelled()) {
++                    this.setAge(0); // Sets the age to 0 for avoid a loop if the event is canceled
++                    return;
++                }
++                // CraftBukkit end
+                 this.playSound(SoundEvents.TADPOLE_GROW_UP, 0.15F, 1.0F);
+-                serverLevel.addFreshEntityWithPassengers(frog);
++                worldserver.addFreshEntityWithPassengers(frog, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.METAMORPHOSIS); // CraftBukkit - add SpawnReason
+                 this.discard();
+             }
+         }
+@@ -237,7 +254,7 @@
+     }
+ 
+     private int getTicksLeftUntilAdult() {
+-        return Math.max(0, ticksToBeFrog - this.age);
++        return Math.max(0, Tadpole.ticksToBeFrog - this.age);
+     }
+ 
+     @Override

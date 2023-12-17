@@ -1,0 +1,74 @@
+--- a/net/minecraft/world/item/RecordItem.java
++++ b/net/minecraft/world/item/RecordItem.java
+@@ -22,6 +22,7 @@
+ import net.minecraft.world.level.gameevent.GameEvent;
+ 
+ public class RecordItem extends Item {
++
+     private static final Map<SoundEvent, RecordItem> BY_NAME = Maps.newHashMap();
+     private final int analogOutput;
+     private final SoundEvent sound;
+@@ -32,32 +33,37 @@
+         this.analogOutput = comparatorOutput;
+         this.sound = sound;
+         this.lengthInTicks = lengthInSeconds * 20;
+-        BY_NAME.put(this.sound, this);
++        RecordItem.BY_NAME.put(this.sound, this);
+     }
+ 
+     @Override
+     public InteractionResult useOn(UseOnContext context) {
+-        Level level = context.getLevel();
+-        BlockPos blockPos = context.getClickedPos();
+-        BlockState blockState = level.getBlockState(blockPos);
+-        if (blockState.is(Blocks.JUKEBOX) && !blockState.getValue(JukeboxBlock.HAS_RECORD)) {
+-            ItemStack itemStack = context.getItemInHand();
+-            if (!level.isClientSide) {
+-                Player player = context.getPlayer();
+-                BlockEntity var8 = level.getBlockEntity(blockPos);
+-                if (var8 instanceof JukeboxBlockEntity) {
+-                    JukeboxBlockEntity jukeboxBlockEntity = (JukeboxBlockEntity)var8;
+-                    jukeboxBlockEntity.setFirstItem(itemStack.copy());
+-                    level.gameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Context.of(player, blockState));
++        Level world = context.getLevel();
++        BlockPos blockposition = context.getClickedPos();
++        BlockState iblockdata = world.getBlockState(blockposition);
++
++        if (iblockdata.is(Blocks.JUKEBOX) && !(Boolean) iblockdata.getValue(JukeboxBlock.HAS_RECORD)) {
++            ItemStack itemstack = context.getItemInHand();
++
++            if (!world.isClientSide) {
++                if (true) return InteractionResult.sidedSuccess(world.isClientSide); // CraftBukkit - handled in ItemStack // Paper - fix duplicate animate packet
++                Player entityhuman = context.getPlayer();
++                BlockEntity tileentity = world.getBlockEntity(blockposition);
++
++                if (tileentity instanceof JukeboxBlockEntity) {
++                    JukeboxBlockEntity tileentityjukebox = (JukeboxBlockEntity) tileentity;
++
++                    tileentityjukebox.setFirstItem(itemstack.copy());
++                    world.gameEvent(GameEvent.BLOCK_CHANGE, blockposition, GameEvent.Context.of(entityhuman, iblockdata));
+                 }
+ 
+-                itemStack.shrink(1);
+-                if (player != null) {
+-                    player.awardStat(Stats.PLAY_RECORD);
++                itemstack.shrink(1);
++                if (entityhuman != null) {
++                    entityhuman.awardStat(Stats.PLAY_RECORD);
+                 }
+             }
+ 
+-            return InteractionResult.sidedSuccess(level.isClientSide);
++            return InteractionResult.sidedSuccess(world.isClientSide);
+         } else {
+             return InteractionResult.PASS;
+         }
+@@ -78,7 +84,7 @@
+ 
+     @Nullable
+     public static RecordItem getBySound(SoundEvent sound) {
+-        return BY_NAME.get(sound);
++        return (RecordItem) RecordItem.BY_NAME.get(sound);
+     }
+ 
+     public SoundEvent getSound() {

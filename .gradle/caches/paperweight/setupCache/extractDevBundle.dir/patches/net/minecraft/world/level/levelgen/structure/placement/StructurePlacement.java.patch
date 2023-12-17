@@ -1,0 +1,85 @@
+--- a/net/minecraft/world/level/levelgen/structure/placement/StructurePlacement.java
++++ b/net/minecraft/world/level/levelgen/structure/placement/StructurePlacement.java
+@@ -59,10 +59,24 @@
+         return this.exclusionZone;
+     }
+ 
++    @Deprecated @io.papermc.paper.annotation.DoNotUse // Paper
+     public boolean isStructureChunk(ChunkGeneratorStructureState calculator, int chunkX, int chunkZ) {
++        // Paper start - add missing structure set configs
++        return this.isStructureChunk(calculator, chunkX, chunkZ, null);
++    }
++    public boolean isStructureChunk(ChunkGeneratorStructureState calculator, int chunkX, int chunkZ, @org.jetbrains.annotations.Nullable net.minecraft.resources.ResourceKey<StructureSet> structureSetKey) {
++        Integer saltOverride = null;
++        if (structureSetKey != null) {
++            if (structureSetKey == net.minecraft.world.level.levelgen.structure.BuiltinStructureSets.MINESHAFTS) {
++                saltOverride = calculator.conf.mineshaftSeed;
++            } else if (structureSetKey == net.minecraft.world.level.levelgen.structure.BuiltinStructureSets.BURIED_TREASURES) {
++                saltOverride = calculator.conf.buriedTreasureSeed;
++            }
++        }
++        // Paper end
+         if (!this.isPlacementChunk(calculator, chunkX, chunkZ)) {
+             return false;
+-        } else if (this.frequency < 1.0F && !this.frequencyReductionMethod.shouldGenerate(calculator.getLevelSeed(), this.salt, chunkX, chunkZ, this.frequency)) {
++        } else if (this.frequency < 1.0F && !this.frequencyReductionMethod.shouldGenerate(calculator.getLevelSeed(), this.salt, chunkX, chunkZ, this.frequency, saltOverride)) { // Paper
+             return false;
+         } else {
+             return !this.exclusionZone.isPresent() || !this.exclusionZone.get().isPlacementForbidden(calculator, chunkX, chunkZ);
+@@ -77,25 +91,31 @@
+ 
+     public abstract StructurePlacementType<?> type();
+ 
+-    private static boolean probabilityReducer(long seed, int salt, int chunkX, int chunkZ, float frequency) {
++    private static boolean probabilityReducer(long seed, int salt, int chunkX, int chunkZ, float frequency, @org.jetbrains.annotations.Nullable Integer saltOverride) { // Paper - ignore here
+         WorldgenRandom worldgenRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+         worldgenRandom.setLargeFeatureWithSalt(seed, salt, chunkX, chunkZ);
+         return worldgenRandom.nextFloat() < frequency;
+     }
+ 
+-    private static boolean legacyProbabilityReducerWithDouble(long seed, int salt, int chunkX, int chunkZ, float frequency) {
++    private static boolean legacyProbabilityReducerWithDouble(long seed, int salt, int chunkX, int chunkZ, float frequency, @org.jetbrains.annotations.Nullable Integer saltOverride) { // Paper
+         WorldgenRandom worldgenRandom = new WorldgenRandom(new LegacyRandomSource(0L));
++        if (saltOverride == null) { // Paper
+         worldgenRandom.setLargeFeatureSeed(seed, chunkX, chunkZ);
++        // Paper start
++        } else {
++            worldgenRandom.setLargeFeatureWithSalt(seed, chunkX, chunkZ, saltOverride);
++        }
++        // Paper end
+         return worldgenRandom.nextDouble() < (double)frequency;
+     }
+ 
+-    private static boolean legacyArbitrarySaltProbabilityReducer(long seed, int salt, int chunkX, int chunkZ, float frequency) {
++    private static boolean legacyArbitrarySaltProbabilityReducer(long seed, int salt, int chunkX, int chunkZ, float frequency, @org.jetbrains.annotations.Nullable Integer saltOverride) { // Paper
+         WorldgenRandom worldgenRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+-        worldgenRandom.setLargeFeatureWithSalt(seed, chunkX, chunkZ, 10387320);
++        worldgenRandom.setLargeFeatureWithSalt(seed, chunkX, chunkZ, saltOverride != null ? saltOverride : HIGHLY_ARBITRARY_RANDOM_SALT); // Paper
+         return worldgenRandom.nextFloat() < frequency;
+     }
+ 
+-    private static boolean legacyPillagerOutpostReducer(long seed, int salt, int chunkX, int chunkZ, float frequency) {
++    private static boolean legacyPillagerOutpostReducer(long seed, int salt, int chunkX, int chunkZ, float frequency, @org.jetbrains.annotations.Nullable Integer saltOverride) { // Paper - ignore here
+         int i = chunkX >> 4;
+         int j = chunkZ >> 4;
+         WorldgenRandom worldgenRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+@@ -118,7 +138,7 @@
+ 
+     @FunctionalInterface
+     public interface FrequencyReducer {
+-        boolean shouldGenerate(long seed, int salt, int chunkX, int chunkZ, float chance);
++        boolean shouldGenerate(long seed, int salt, int chunkX, int chunkZ, float chance, @org.jetbrains.annotations.Nullable Integer saltOverride); // Paper
+     }
+ 
+     public static enum FrequencyReductionMethod implements StringRepresentable {
+@@ -136,8 +156,8 @@
+             this.reducer = generationPredicate;
+         }
+ 
+-        public boolean shouldGenerate(long seed, int salt, int chunkX, int chunkZ, float chance) {
+-            return this.reducer.shouldGenerate(seed, salt, chunkX, chunkZ, chance);
++        public boolean shouldGenerate(long seed, int salt, int chunkX, int chunkZ, float chance, @org.jetbrains.annotations.Nullable Integer saltOverride) { // Paper
++            return this.reducer.shouldGenerate(seed, salt, chunkX, chunkZ, chance, saltOverride); // Paper
+         }
+ 
+         @Override

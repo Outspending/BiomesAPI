@@ -1,0 +1,50 @@
+--- a/net/minecraft/world/level/block/entity/SculkSensorBlockEntity.java
++++ b/net/minecraft/world/level/block/entity/SculkSensorBlockEntity.java
+@@ -24,6 +24,7 @@
+     private final VibrationSystem.Listener vibrationListener;
+     private final VibrationSystem.User vibrationUser = this.createVibrationUser();
+     public int lastVibrationFrequency;
++    @Nullable public Integer rangeOverride = null; // Paper
+ 
+     protected SculkSensorBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+         super(type, pos, state);
+@@ -48,9 +49,17 @@
+                 this.vibrationData = listener;
+             });
+         }
++        // Paper start
++        if (nbt.contains(PAPER_LISTENER_RANGE_NBT_KEY)) {
++            this.rangeOverride = nbt.getInt(PAPER_LISTENER_RANGE_NBT_KEY);
++        } else {
++            this.rangeOverride = null;
++        }
++        // Paper end
+ 
+     }
+ 
++    protected static final String PAPER_LISTENER_RANGE_NBT_KEY = "Paper.ListenerRange"; // Paper
+     @Override
+     protected void saveAdditional(CompoundTag nbt) {
+         super.saveAdditional(nbt);
+@@ -58,7 +67,13 @@
+         VibrationSystem.Data.CODEC.encodeStart(NbtOps.INSTANCE, this.vibrationData).resultOrPartial(LOGGER::error).ifPresent((listenerNbt) -> {
+             nbt.put("listener", listenerNbt);
+         });
++        this.saveRangeOverride(nbt); // Paper
++    }
++    // Paper start
++    protected void saveRangeOverride(CompoundTag nbt) {
++        if (this.rangeOverride != null && this.rangeOverride != VibrationUser.LISTENER_RANGE) nbt.putInt(PAPER_LISTENER_RANGE_NBT_KEY, this.rangeOverride); // only save if it's different from the default
+     }
++    // Paper end
+ 
+     @Override
+     public VibrationSystem.Data getVibrationData() {
+@@ -95,6 +110,7 @@
+ 
+         @Override
+         public int getListenerRadius() {
++            if (SculkSensorBlockEntity.this.rangeOverride != null) return SculkSensorBlockEntity.this.rangeOverride; // Paper
+             return 8;
+         }
+ 

@@ -1,0 +1,157 @@
+--- a/net/minecraft/world/item/HangingEntityItem.java
++++ b/net/minecraft/world/item/HangingEntityItem.java
+@@ -10,17 +10,24 @@
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.InteractionResult;
++import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.EntityType;
+ import net.minecraft.world.entity.decoration.GlowItemFrame;
+ import net.minecraft.world.entity.decoration.HangingEntity;
+ import net.minecraft.world.entity.decoration.ItemFrame;
+ import net.minecraft.world.entity.decoration.Painting;
+-import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.entity.decoration.PaintingVariant;
+ import net.minecraft.world.item.context.UseOnContext;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.gameevent.GameEvent;
+ 
++// CraftBukkit start
++import org.bukkit.entity.Player;
++import org.bukkit.event.hanging.HangingPlaceEvent;
++// CraftBukkit end
++
+ public class HangingEntityItem extends Item {
++
+     private static final Component TOOLTIP_RANDOM_VARIANT = Component.translatable("painting.random").withStyle(ChatFormatting.GRAY);
+     private final EntityType<? extends HangingEntity> type;
+ 
+@@ -31,54 +38,71 @@
+ 
+     @Override
+     public InteractionResult useOn(UseOnContext context) {
+-        BlockPos blockPos = context.getClickedPos();
+-        Direction direction = context.getClickedFace();
+-        BlockPos blockPos2 = blockPos.relative(direction);
+-        Player player = context.getPlayer();
+-        ItemStack itemStack = context.getItemInHand();
+-        if (player != null && !this.mayPlace(player, direction, itemStack, blockPos2)) {
++        BlockPos blockposition = context.getClickedPos();
++        Direction enumdirection = context.getClickedFace();
++        BlockPos blockposition1 = blockposition.relative(enumdirection);
++        net.minecraft.world.entity.player.Player entityhuman = context.getPlayer();
++        ItemStack itemstack = context.getItemInHand();
++
++        if (entityhuman != null && !this.mayPlace(entityhuman, enumdirection, itemstack, blockposition1)) {
+             return InteractionResult.FAIL;
+         } else {
+-            Level level = context.getLevel();
+-            HangingEntity hangingEntity;
++            Level world = context.getLevel();
++            Object object;
++
+             if (this.type == EntityType.PAINTING) {
+-                Optional<Painting> optional = Painting.create(level, blockPos2, direction);
++                Optional<Painting> optional = Painting.create(world, blockposition1, enumdirection);
++
+                 if (optional.isEmpty()) {
+                     return InteractionResult.CONSUME;
+                 }
+ 
+-                hangingEntity = optional.get();
++                object = (HangingEntity) optional.get();
+             } else if (this.type == EntityType.ITEM_FRAME) {
+-                hangingEntity = new ItemFrame(level, blockPos2, direction);
++                object = new ItemFrame(world, blockposition1, enumdirection);
+             } else {
+                 if (this.type != EntityType.GLOW_ITEM_FRAME) {
+-                    return InteractionResult.sidedSuccess(level.isClientSide);
++                    return InteractionResult.sidedSuccess(world.isClientSide);
+                 }
+ 
+-                hangingEntity = new GlowItemFrame(level, blockPos2, direction);
++                object = new GlowItemFrame(world, blockposition1, enumdirection);
+             }
+ 
+-            CompoundTag compoundTag = itemStack.getTag();
+-            if (compoundTag != null) {
+-                EntityType.updateCustomEntityTag(level, player, hangingEntity, compoundTag);
++            CompoundTag nbttagcompound = itemstack.getTag();
++
++            if (nbttagcompound != null) {
++                EntityType.updateCustomEntityTag(world, entityhuman, (Entity) object, nbttagcompound);
+             }
+ 
+-            if (hangingEntity.survives()) {
+-                if (!level.isClientSide) {
+-                    hangingEntity.playPlacementSound();
+-                    level.gameEvent(player, GameEvent.ENTITY_PLACE, hangingEntity.position());
+-                    level.addFreshEntity(hangingEntity);
++            if (((HangingEntity) object).survives()) {
++                if (!world.isClientSide) {
++                    // CraftBukkit start - fire HangingPlaceEvent
++                    Player who = (context.getPlayer() == null) ? null : (Player) context.getPlayer().getBukkitEntity();
++                    org.bukkit.block.Block blockClicked = world.getWorld().getBlockAt(blockposition.getX(), blockposition.getY(), blockposition.getZ());
++                    org.bukkit.block.BlockFace blockFace = org.bukkit.craftbukkit.v1_20_R2.block.CraftBlock.notchToBlockFace(enumdirection);
++                    org.bukkit.inventory.EquipmentSlot hand = org.bukkit.craftbukkit.v1_20_R2.CraftEquipmentSlot.getHand(context.getHand());
++
++                    HangingPlaceEvent event = new HangingPlaceEvent((org.bukkit.entity.Hanging) ((HangingEntity) object).getBukkitEntity(), who, blockClicked, blockFace, hand, org.bukkit.craftbukkit.v1_20_R2.inventory.CraftItemStack.asBukkitCopy(itemstack));
++                    world.getCraftServer().getPluginManager().callEvent(event);
++
++                    if (event.isCancelled()) {
++                        return InteractionResult.FAIL;
++                    }
++                    // CraftBukkit end
++                    ((HangingEntity) object).playPlacementSound();
++                    world.gameEvent((Entity) entityhuman, GameEvent.ENTITY_PLACE, ((HangingEntity) object).position());
++                    world.addFreshEntity((Entity) object);
+                 }
+ 
+-                itemStack.shrink(1);
+-                return InteractionResult.sidedSuccess(level.isClientSide);
++                itemstack.shrink(1);
++                return InteractionResult.sidedSuccess(world.isClientSide);
+             } else {
+                 return InteractionResult.CONSUME;
+             }
+         }
+     }
+ 
+-    protected boolean mayPlace(Player player, Direction side, ItemStack stack, BlockPos pos) {
++    protected boolean mayPlace(net.minecraft.world.entity.player.Player player, Direction side, ItemStack stack, BlockPos pos) {
+         return !side.getAxis().isVertical() && player.mayUseItemAt(pos, side, stack);
+     }
+ 
+@@ -86,20 +110,22 @@
+     public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag context) {
+         super.appendHoverText(stack, world, tooltip, context);
+         if (this.type == EntityType.PAINTING) {
+-            CompoundTag compoundTag = stack.getTag();
+-            if (compoundTag != null && compoundTag.contains("EntityTag", 10)) {
+-                CompoundTag compoundTag2 = compoundTag.getCompound("EntityTag");
+-                Painting.loadVariant(compoundTag2).ifPresentOrElse((variant) -> {
+-                    variant.unwrapKey().ifPresent((key) -> {
+-                        tooltip.add(Component.translatable(key.location().toLanguageKey("painting", "title")).withStyle(ChatFormatting.YELLOW));
+-                        tooltip.add(Component.translatable(key.location().toLanguageKey("painting", "author")).withStyle(ChatFormatting.GRAY));
++            CompoundTag nbttagcompound = stack.getTag();
++
++            if (nbttagcompound != null && nbttagcompound.contains("EntityTag", 10)) {
++                CompoundTag nbttagcompound1 = nbttagcompound.getCompound("EntityTag");
++
++                Painting.loadVariant(nbttagcompound1).ifPresentOrElse((holder) -> {
++                    holder.unwrapKey().ifPresent((resourcekey) -> {
++                        tooltip.add(Component.translatable(resourcekey.location().toLanguageKey("painting", "title")).withStyle(ChatFormatting.YELLOW));
++                        tooltip.add(Component.translatable(resourcekey.location().toLanguageKey("painting", "author")).withStyle(ChatFormatting.GRAY));
+                     });
+-                    tooltip.add(Component.translatable("painting.dimensions", Mth.positiveCeilDiv(variant.value().getWidth(), 16), Mth.positiveCeilDiv(variant.value().getHeight(), 16)));
++                    tooltip.add(Component.translatable("painting.dimensions", Mth.positiveCeilDiv(((PaintingVariant) holder.value()).getWidth(), 16), Mth.positiveCeilDiv(((PaintingVariant) holder.value()).getHeight(), 16)));
+                 }, () -> {
+-                    tooltip.add(TOOLTIP_RANDOM_VARIANT);
++                    tooltip.add(HangingEntityItem.TOOLTIP_RANDOM_VARIANT);
+                 });
+             } else if (context.isCreative()) {
+-                tooltip.add(TOOLTIP_RANDOM_VARIANT);
++                tooltip.add(HangingEntityItem.TOOLTIP_RANDOM_VARIANT);
+             }
+         }
+ 

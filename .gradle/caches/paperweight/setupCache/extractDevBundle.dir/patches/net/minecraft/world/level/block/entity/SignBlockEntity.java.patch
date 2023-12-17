@@ -1,0 +1,421 @@
+--- a/net/minecraft/world/level/block/entity/SignBlockEntity.java
++++ b/net/minecraft/world/level/block/entity/SignBlockEntity.java
+@@ -2,7 +2,9 @@
+ 
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+ import com.mojang.logging.LogUtils;
++import com.mojang.serialization.DataResult;
+ import java.util.List;
++import java.util.Objects;
+ import java.util.UUID;
+ import java.util.function.UnaryOperator;
+ import javax.annotation.Nullable;
+@@ -11,16 +13,17 @@
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.NbtOps;
++import net.minecraft.nbt.Tag;
+ import net.minecraft.network.chat.ClickEvent;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.network.chat.ComponentUtils;
+ import net.minecraft.network.chat.Style;
+ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+ import net.minecraft.server.level.ServerLevel;
++import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.server.network.FilteredText;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.entity.Entity;
+-import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.SignBlock;
+@@ -28,15 +31,22 @@
+ import net.minecraft.world.phys.Vec2;
+ import net.minecraft.world.phys.Vec3;
+ import org.slf4j.Logger;
++import org.bukkit.block.sign.Side;
++import org.bukkit.craftbukkit.v1_20_R2.block.CraftBlock;
++import org.bukkit.craftbukkit.v1_20_R2.util.CraftChatMessage;
++import org.bukkit.entity.Player;
++import org.bukkit.event.block.SignChangeEvent;
++// CraftBukkit end
++
++public class SignBlockEntity extends BlockEntity implements CommandSource { // CraftBukkit - implements
+ 
+-public class SignBlockEntity extends BlockEntity {
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private static final int MAX_TEXT_LINE_WIDTH = 90;
+     private static final int TEXT_LINE_HEIGHT = 10;
+     @Nullable
+-    public UUID playerWhoMayEdit;
+-    private SignText frontText = this.createDefaultSignText();
+-    private SignText backText = this.createDefaultSignText();
++    private UUID playerWhoMayEdit;
++    private SignText frontText;
++    private SignText backText;
+     private boolean isWaxed;
+ 
+     public SignBlockEntity(BlockPos pos, BlockState state) {
+@@ -45,27 +55,37 @@
+ 
+     public SignBlockEntity(BlockEntityType type, BlockPos pos, BlockState state) {
+         super(type, pos, state);
++        this.frontText = this.createDefaultSignText();
++        this.backText = this.createDefaultSignText();
+     }
+ 
+     protected SignText createDefaultSignText() {
+         return new SignText();
+     }
+ 
+-    public boolean isFacingFrontText(Player player) {
+-        Block vec3 = this.getBlockState().getBlock();
+-        if (vec3 instanceof SignBlock signBlock) {
+-            Vec3 vec3 = signBlock.getSignHitboxCenterPosition(this.getBlockState());
+-            double d = player.getX() - ((double)this.getBlockPos().getX() + vec3.x);
+-            double e = player.getZ() - ((double)this.getBlockPos().getZ() + vec3.z);
+-            float f = signBlock.getYRotationDegrees(this.getBlockState());
+-            float g = (float)(Mth.atan2(e, d) * (double)(180F / (float)Math.PI)) - 90.0F;
+-            return Mth.degreesDifferenceAbs(f, g) <= 90.0F;
++    public boolean isFacingFrontText(net.minecraft.world.entity.player.Player player) {
++        // Paper start
++        return this.isFacingFrontText(player.getX(), player.getZ());
++    }
++    public boolean isFacingFrontText(double x, double z) {
++        // Paper end
++        Block block = this.getBlockState().getBlock();
++
++        if (block instanceof SignBlock) {
++            SignBlock blocksign = (SignBlock) block;
++            Vec3 vec3d = blocksign.getSignHitboxCenterPosition(this.getBlockState());
++            double d0 = x - ((double) this.getBlockPos().getX() + vec3d.x); // Paper
++            double d1 = z - ((double) this.getBlockPos().getZ() + vec3d.z); // Paper
++            float f = blocksign.getYRotationDegrees(this.getBlockState());
++            float f1 = (float) (Mth.atan2(d1, d0) * 57.2957763671875D) - 90.0F;
++
++            return Mth.degreesDifferenceAbs(f, f1) <= 90.0F;
+         } else {
+             return false;
+         }
+     }
+ 
+-    public SignText getTextFacingPlayer(Player player) {
++    public SignText getTextFacingPlayer(net.minecraft.world.entity.player.Player player) {
+         return this.getText(this.isFacingFrontText(player));
+     }
+ 
+@@ -92,11 +112,18 @@
+     @Override
+     protected void saveAdditional(CompoundTag nbt) {
+         super.saveAdditional(nbt);
+-        SignText.DIRECT_CODEC.encodeStart(NbtOps.INSTANCE, this.frontText).resultOrPartial(LOGGER::error).ifPresent((frontText) -> {
+-            nbt.put("front_text", frontText);
++        DataResult<Tag> dataresult = SignText.DIRECT_CODEC.encodeStart(NbtOps.INSTANCE, this.frontText); // CraftBukkit - decompile error
++        Logger logger = SignBlockEntity.LOGGER;
++
++        Objects.requireNonNull(logger);
++        dataresult.resultOrPartial(logger::error).ifPresent((nbtbase) -> {
++            nbt.put("front_text", nbtbase);
+         });
+-        SignText.DIRECT_CODEC.encodeStart(NbtOps.INSTANCE, this.backText).resultOrPartial(LOGGER::error).ifPresent((backText) -> {
+-            nbt.put("back_text", backText);
++        dataresult = SignText.DIRECT_CODEC.encodeStart(NbtOps.INSTANCE, this.backText);
++        logger = SignBlockEntity.LOGGER;
++        Objects.requireNonNull(logger);
++        dataresult.resultOrPartial(logger::error).ifPresent((nbtbase) -> {
++            nbt.put("back_text", nbtbase);
+         });
+         nbt.putBoolean("is_waxed", this.isWaxed);
+     }
+@@ -104,15 +131,24 @@
+     @Override
+     public void load(CompoundTag nbt) {
+         super.load(nbt);
++        DataResult<SignText> dataresult; // CraftBukkit - decompile error
++        Logger logger;
++
+         if (nbt.contains("front_text")) {
+-            SignText.DIRECT_CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("front_text")).resultOrPartial(LOGGER::error).ifPresent((signText) -> {
+-                this.frontText = this.loadLines(signText);
++            dataresult = SignText.DIRECT_CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("front_text"));
++            logger = SignBlockEntity.LOGGER;
++            Objects.requireNonNull(logger);
++            dataresult.resultOrPartial(logger::error).ifPresent((signtext) -> {
++                this.frontText = this.loadLines(signtext);
+             });
+         }
+ 
+         if (nbt.contains("back_text")) {
+-            SignText.DIRECT_CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("back_text")).resultOrPartial(LOGGER::error).ifPresent((signText) -> {
+-                this.backText = this.loadLines(signText);
++            dataresult = SignText.DIRECT_CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("back_text"));
++            logger = SignBlockEntity.LOGGER;
++            Objects.requireNonNull(logger);
++            dataresult.resultOrPartial(logger::error).ifPresent((signtext) -> {
++                this.backText = this.loadLines(signtext);
+             });
+         }
+ 
+@@ -120,56 +156,89 @@
+     }
+ 
+     private SignText loadLines(SignText signText) {
+-        for(int i = 0; i < 4; ++i) {
+-            Component component = this.loadLine(signText.getMessage(i, false));
+-            Component component2 = this.loadLine(signText.getMessage(i, true));
+-            signText = signText.setMessage(i, component, component2);
++        for (int i = 0; i < 4; ++i) {
++            Component ichatbasecomponent = this.loadLine(signText.getMessage(i, false));
++            Component ichatbasecomponent1 = this.loadLine(signText.getMessage(i, true));
++
++            signText = signText.setMessage(i, ichatbasecomponent, ichatbasecomponent1);
+         }
+ 
+         return signText;
+     }
+ 
+     private Component loadLine(Component text) {
+-        Level var3 = this.level;
+-        if (var3 instanceof ServerLevel serverLevel) {
++        Level world = this.level;
++
++        if (world instanceof ServerLevel) {
++            ServerLevel worldserver = (ServerLevel) world;
++
+             try {
+-                return ComponentUtils.updateForEntity(createCommandSourceStack((Player)null, serverLevel, this.worldPosition), text, (Entity)null, 0);
+-            } catch (CommandSyntaxException var4) {
++                return ComponentUtils.updateForEntity(this.createCommandSourceStack((net.minecraft.world.entity.player.Player) null, worldserver, this.worldPosition), text, (Entity) null, 0);
++            } catch (CommandSyntaxException commandsyntaxexception) {
++                ;
+             }
+         }
+ 
+         return text;
+     }
+ 
+-    public void updateSignText(Player player, boolean front, List<FilteredText> messages) {
++    public void updateSignText(net.minecraft.world.entity.player.Player player, boolean front, List<FilteredText> messages) {
+         if (!this.isWaxed() && player.getUUID().equals(this.getPlayerWhoMayEdit()) && this.level != null) {
+-            this.updateText((text) -> {
+-                return this.setMessages(player, messages, text);
++            this.updateText((signtext) -> {
++                return this.setMessages(player, messages, signtext, front); // CraftBukkit
+             }, front);
+-            this.setAllowedPlayerEditor((UUID)null);
++            this.setAllowedPlayerEditor((UUID) null);
+             this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
+         } else {
+-            LOGGER.warn("Player {} just tried to change non-editable sign", (Object)player.getName().getString());
++            SignBlockEntity.LOGGER.warn("Player {} just tried to change non-editable sign", player.getName().getString());
++            if (player.distanceToSqr(this.getBlockPos().getX(), this.getBlockPos().getY(), this.getBlockPos().getZ()) < 32 * 32) // Paper
++            ((ServerPlayer) player).connection.send(this.getUpdatePacket()); // CraftBukkit
+         }
+     }
+ 
+     public boolean updateText(UnaryOperator<SignText> textChanger, boolean front) {
+-        SignText signText = this.getText(front);
+-        return this.setText(textChanger.apply(signText), front);
++        SignText signtext = this.getText(front);
++
++        return this.setText((SignText) textChanger.apply(signtext), front);
+     }
+ 
+-    private SignText setMessages(Player player, List<FilteredText> messages, SignText text) {
+-        for(int i = 0; i < messages.size(); ++i) {
+-            FilteredText filteredText = messages.get(i);
+-            Style style = text.getMessage(i, player.isTextFilteringEnabled()).getStyle();
+-            if (player.isTextFilteringEnabled()) {
+-                text = text.setMessage(i, Component.literal(filteredText.filteredOrEmpty()).setStyle(style));
++    private SignText setMessages(net.minecraft.world.entity.player.Player entityhuman, List<FilteredText> list, SignText signtext, boolean front) { // CraftBukkit
++        SignText originalText = signtext; // CraftBukkit
++        for (int i = 0; i < list.size(); ++i) {
++            FilteredText filteredtext = (FilteredText) list.get(i);
++            Style chatmodifier = signtext.getMessage(i, entityhuman.isTextFilteringEnabled()).getStyle();
++
++            if (entityhuman.isTextFilteringEnabled()) {
++                signtext = signtext.setMessage(i, Component.literal(net.minecraft.SharedConstants.filterText(filteredtext.filteredOrEmpty())).setStyle(chatmodifier)); // Paper - filter sign text to chat only
+             } else {
+-                text = text.setMessage(i, Component.literal(filteredText.raw()).setStyle(style), Component.literal(filteredText.filteredOrEmpty()).setStyle(style));
++                signtext = signtext.setMessage(i, Component.literal(net.minecraft.SharedConstants.filterText(filteredtext.raw())).setStyle(chatmodifier), Component.literal(net.minecraft.SharedConstants.filterText(filteredtext.filteredOrEmpty())).setStyle(chatmodifier)); // Paper - filter sign text to chat only
+             }
+         }
+ 
+-        return text;
++        // CraftBukkit start
++        Player player = ((ServerPlayer) entityhuman).getBukkitEntity();
++        List<net.kyori.adventure.text.Component> lines = new java.util.ArrayList<>(); // Paper - adventure
++
++        for (int i = 0; i < list.size(); ++i) {
++            lines.add(io.papermc.paper.adventure.PaperAdventure.asAdventure(signtext.getMessage(i, entityhuman.isTextFilteringEnabled()))); // Paper - Adventure
++        }
++
++        SignChangeEvent event = new SignChangeEvent(CraftBlock.at(this.level, this.worldPosition), player, new java.util.ArrayList<>(lines), (front) ? Side.FRONT : Side.BACK); // Paper - Adventure
++        entityhuman.level().getCraftServer().getPluginManager().callEvent(event);
++
++        if (event.isCancelled()) {
++            return originalText;
++        }
++
++        Component[] components = org.bukkit.craftbukkit.v1_20_R2.block.CraftSign.sanitizeLines(event.lines()); // Paper - Adventure
++        for (int i = 0; i < components.length; i++) {
++            if (!Objects.equals(lines.get(i), event.line(i))) { // Paper - Adventure
++                signtext = signtext.setMessage(i, components[i]);
++            }
++        }
++        // CraftBukkit end
++
++        return signtext;
+     }
+ 
+     public boolean setText(SignText text, boolean front) {
+@@ -196,29 +265,85 @@
+         }
+     }
+ 
+-    public boolean canExecuteClickCommands(boolean front, Player player) {
++    public boolean canExecuteClickCommands(boolean front, net.minecraft.world.entity.player.Player player) {
+         return this.isWaxed() && this.getText(front).hasAnyClickCommands(player);
+     }
+ 
+-    public boolean executeClickCommandsIfPresent(Player player, Level world, BlockPos pos, boolean front) {
+-        boolean bl = false;
++    public boolean executeClickCommandsIfPresent(net.minecraft.world.entity.player.Player player, Level world, BlockPos pos, boolean front) {
++        boolean flag1 = false;
++        Component[] aichatbasecomponent = this.getText(front).getMessages(player.isTextFilteringEnabled());
++        int i = aichatbasecomponent.length;
+ 
+-        for(Component component : this.getText(front).getMessages(player.isTextFilteringEnabled())) {
+-            Style style = component.getStyle();
+-            ClickEvent clickEvent = style.getClickEvent();
+-            if (clickEvent != null && clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
+-                player.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(player, world, pos), clickEvent.getValue());
+-                bl = true;
++        for (int j = 0; j < i; ++j) {
++            Component ichatbasecomponent = aichatbasecomponent[j];
++            Style chatmodifier = ichatbasecomponent.getStyle();
++            ClickEvent chatclickable = chatmodifier.getClickEvent();
++
++            if (chatclickable != null && chatclickable.getAction() == ClickEvent.Action.RUN_COMMAND) {
++                // Paper start
++                String command = chatclickable.getValue().startsWith("/") ? chatclickable.getValue() : "/" + chatclickable.getValue();
++                if (org.spigotmc.SpigotConfig.logCommands)  {
++                    LOGGER.info("{} issued server command: {}", player.getScoreboardName(), command);
++                }
++                io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent event = new io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent((org.bukkit.entity.Player) player.getBukkitEntity(), command, new org.bukkit.craftbukkit.v1_20_R2.util.LazyPlayerSet(player.getServer()), (org.bukkit.block.Sign) io.papermc.paper.util.MCUtil.toBukkitBlock(this.level, this.worldPosition).getState(), front ? Side.FRONT : Side.BACK);
++                if (!event.callEvent()) {
++                    return false;
++                }
++                player.getServer().getCommands().performPrefixedCommand(this.createCommandSourceStack(((org.bukkit.craftbukkit.v1_20_R2.entity.CraftPlayer) event.getPlayer()).getHandle(), world, pos), event.getMessage());
++                // Paper end
++                flag1 = true;
+             }
+         }
+ 
+-        return bl;
++        return flag1;
+     }
+ 
+-    private static CommandSourceStack createCommandSourceStack(@Nullable Player player, Level world, BlockPos pos) {
+-        String string = player == null ? "Sign" : player.getName().getString();
+-        Component component = (Component)(player == null ? Component.literal("Sign") : player.getDisplayName());
+-        return new CommandSourceStack(CommandSource.NULL, Vec3.atCenterOf(pos), Vec2.ZERO, (ServerLevel)world, 2, string, component, world.getServer(), player);
++    // CraftBukkit start
++    @Override
++    public void sendSystemMessage(Component message) {}
++
++    @Override
++    public org.bukkit.command.CommandSender getBukkitSender(CommandSourceStack wrapper) {
++        return wrapper.getEntity() != null ? wrapper.getEntity().getBukkitSender(wrapper) : new org.bukkit.craftbukkit.v1_20_R2.command.CraftBlockCommandSender(wrapper, this);
++    }
++
++    @Override
++    public boolean acceptsSuccess() {
++        return false;
++    }
++
++    @Override
++    public boolean acceptsFailure() {
++        return false;
++    }
++
++    @Override
++    public boolean shouldInformAdmins() {
++        return false;
++    }
++
++    private CommandSourceStack createCommandSourceStack(@Nullable net.minecraft.world.entity.player.Player player, Level world, BlockPos pos) {
++        // CraftBukkit end
++        String s = player == null ? "Sign" : player.getName().getString();
++        Object object = player == null ? Component.literal("Sign") : player.getDisplayName();
++
++        // Paper start - send messages back to the player
++        CommandSource commandSource = this.level.paperConfig().misc.showSignClickCommandFailureMsgsToPlayer ? new io.papermc.paper.commands.DelegatingCommandSource(this) {
++            @Override
++            public void sendSystemMessage(Component message) {
++                if (player != null) {
++                    player.sendSystemMessage(message);
++                }
++            }
++
++            @Override
++            public boolean acceptsFailure() {
++                return true;
++            }
++        } : this;
++        // Paper end
++        // CraftBukkit - this
++        return new CommandSourceStack(commandSource, Vec3.atCenterOf(pos), Vec2.ZERO, (ServerLevel) world, 2, s, (Component) object, world.getServer(), player); // Paper
+     }
+ 
+     @Override
+@@ -242,12 +367,18 @@
+ 
+     @Nullable
+     public UUID getPlayerWhoMayEdit() {
++        // Paper start
++        if (this.hasLevel() && this.playerWhoMayEdit != null) {
++            // Manually invalidate the value lazily.
++            this.clearInvalidPlayerWhoMayEdit(this, this.getLevel(), this.playerWhoMayEdit);
++        }
++        // Paper end
+         return this.playerWhoMayEdit;
+     }
+ 
+     private void markUpdated() {
+         this.setChanged();
+-        this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
++        if (this.level != null) this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3); // CraftBukkit - skip notify if world is null (SPIGOT-5122)
+     }
+ 
+     public boolean isWaxed() {
+@@ -265,21 +396,23 @@
+     }
+ 
+     public boolean playerIsTooFarAwayToEdit(UUID uuid) {
+-        Player player = this.level.getPlayerByUUID(uuid);
+-        return player == null || player.distanceToSqr((double)this.getBlockPos().getX(), (double)this.getBlockPos().getY(), (double)this.getBlockPos().getZ()) > 64.0D;
++        net.minecraft.world.entity.player.Player entityhuman = this.level.getPlayerByUUID(uuid);
++
++        return entityhuman == null || entityhuman.distanceToSqr((double) this.getBlockPos().getX(), (double) this.getBlockPos().getY(), (double) this.getBlockPos().getZ()) > 64.0D;
+     }
+ 
+     public static void tick(Level world, BlockPos pos, BlockState state, SignBlockEntity blockEntity) {
+-        UUID uUID = blockEntity.getPlayerWhoMayEdit();
+-        if (uUID != null) {
+-            blockEntity.clearInvalidPlayerWhoMayEdit(blockEntity, world, uUID);
++        UUID uuid = blockEntity.getPlayerWhoMayEdit();
++
++        if (uuid != null) {
++            blockEntity.clearInvalidPlayerWhoMayEdit(blockEntity, world, uuid);
+         }
+ 
+     }
+ 
+     private void clearInvalidPlayerWhoMayEdit(SignBlockEntity blockEntity, Level world, UUID uuid) {
+         if (blockEntity.playerIsTooFarAwayToEdit(uuid)) {
+-            blockEntity.setAllowedPlayerEditor((UUID)null);
++            blockEntity.setAllowedPlayerEditor((UUID) null);
+         }
+ 
+     }

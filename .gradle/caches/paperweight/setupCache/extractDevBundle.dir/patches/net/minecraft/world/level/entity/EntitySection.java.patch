@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/entity/EntitySection.java
++++ b/net/minecraft/world/level/entity/EntitySection.java
+@@ -44,7 +44,7 @@
+         } else {
+             for(T entityAccess : collection) {
+                 U entityAccess2 = (U)((EntityAccess)type.tryCast(entityAccess));
+-                if (entityAccess2 != null && entityAccess.getBoundingBox().intersects(box) && consumer.accept((T)entityAccess2).shouldAbort()) {
++                if (entityAccess2 != null && entityAccess.getBoundingBox().intersects(box) && consumer.accept(entityAccess2).shouldAbort()) { // Paper - decompile fix
+                     return AbortableIterationConsumer.Continuation.ABORT;
+                 }
+             }

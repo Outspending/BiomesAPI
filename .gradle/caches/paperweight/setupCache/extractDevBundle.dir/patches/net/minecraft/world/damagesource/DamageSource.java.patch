@@ -1,0 +1,205 @@
+--- a/net/minecraft/world/damagesource/DamageSource.java
++++ b/net/minecraft/world/damagesource/DamageSource.java
+@@ -12,6 +12,7 @@
+ import net.minecraft.world.phys.Vec3;
+ 
+ public class DamageSource {
++
+     private final Holder<DamageType> type;
+     @Nullable
+     private final Entity causingEntity;
+@@ -19,8 +20,40 @@
+     private final Entity directEntity;
+     @Nullable
+     private final Vec3 damageSourcePosition;
++    // CraftBukkit start
++    private boolean sweep;
++    private boolean melting;
++    private boolean poison;
++
++    public boolean isSweep() {
++        return this.sweep;
++    }
++
++    public DamageSource sweep() {
++        this.sweep = true;
++        return this;
++    }
++
++    public boolean isMelting() {
++        return this.melting;
++    }
++
++    public DamageSource melting() {
++        this.melting = true;
++        return this;
++    }
++
++    public boolean isPoison() {
++        return this.poison;
++    }
++
++    public DamageSource poison() {
++        this.poison = true;
++        return this;
++    }
++    // CraftBukkit end
++    public @Nullable org.bukkit.block.BlockState explodedBlockState; // Paper - add exploded state
+ 
+-    @Override
+     public String toString() {
+         return "DamageSource (" + this.type().msgId() + ")";
+     }
+@@ -41,11 +74,11 @@
+     }
+ 
+     public DamageSource(Holder<DamageType> type, @Nullable Entity source, @Nullable Entity attacker) {
+-        this(type, source, attacker, (Vec3)null);
++        this(type, source, attacker, (Vec3) null);
+     }
+ 
+     public DamageSource(Holder<DamageType> type, Vec3 position) {
+-        this(type, (Entity)null, (Entity)null, position);
++        this(type, (Entity) null, (Entity) null, position);
+     }
+ 
+     public DamageSource(Holder<DamageType> type, @Nullable Entity attacker) {
+@@ -53,7 +86,7 @@
+     }
+ 
+     public DamageSource(Holder<DamageType> type) {
+-        this(type, (Entity)null, (Entity)null, (Vec3)null);
++        this(type, (Entity) null, (Entity) null, (Vec3) null);
+     }
+ 
+     @Nullable
+@@ -67,24 +100,29 @@
+     }
+ 
+     public Component getLocalizedDeathMessage(LivingEntity killed) {
+-        String string = "death.attack." + this.type().msgId();
++        String s = "death.attack." + this.type().msgId();
++
+         if (this.causingEntity == null && this.directEntity == null) {
+-            LivingEntity livingEntity2 = killed.getKillCredit();
+-            String string2 = string + ".player";
+-            return livingEntity2 != null ? Component.translatable(string2, killed.getDisplayName(), livingEntity2.getDisplayName()) : Component.translatable(string, killed.getDisplayName());
++            LivingEntity entityliving1 = killed.getKillCredit();
++            String s1 = s + ".player";
++
++            return entityliving1 != null ? Component.translatable(s1, killed.getDisplayName(), entityliving1.getDisplayName()) : Component.translatable(s, killed.getDisplayName());
+         } else {
+-            Component component = this.causingEntity == null ? this.directEntity.getDisplayName() : this.causingEntity.getDisplayName();
+-            Entity var6 = this.causingEntity;
+-            ItemStack var10000;
+-            if (var6 instanceof LivingEntity) {
+-                LivingEntity livingEntity = (LivingEntity)var6;
+-                var10000 = livingEntity.getMainHandItem();
++            Component ichatbasecomponent = this.causingEntity == null ? this.directEntity.getDisplayName() : this.causingEntity.getDisplayName();
++            Entity entity = this.causingEntity;
++            ItemStack itemstack;
++
++            if (entity instanceof LivingEntity) {
++                LivingEntity entityliving2 = (LivingEntity) entity;
++
++                itemstack = entityliving2.getMainHandItem();
+             } else {
+-                var10000 = ItemStack.EMPTY;
++                itemstack = ItemStack.EMPTY;
+             }
+ 
+-            ItemStack itemStack = var10000;
+-            return !itemStack.isEmpty() && itemStack.hasCustomHoverName() ? Component.translatable(string + ".item", killed.getDisplayName(), component, itemStack.getDisplayName()) : Component.translatable(string, killed.getDisplayName(), component);
++            ItemStack itemstack1 = itemstack;
++
++            return !itemstack1.isEmpty() && itemstack1.hasCustomHoverName() ? Component.translatable(s + ".item", killed.getDisplayName(), ichatbasecomponent, itemstack1.getDisplayName()) : Component.translatable(s, killed.getDisplayName(), ichatbasecomponent);
+         }
+     }
+ 
+@@ -93,42 +131,45 @@
+     }
+ 
+     public boolean scalesWithDifficulty() {
+-        boolean var10000;
++        boolean flag;
++
+         switch (this.type().scaling()) {
+             case NEVER:
+-                var10000 = false;
++                flag = false;
+                 break;
+             case WHEN_CAUSED_BY_LIVING_NON_PLAYER:
+-                var10000 = this.causingEntity instanceof LivingEntity && !(this.causingEntity instanceof Player);
++                flag = this.causingEntity instanceof LivingEntity && !(this.causingEntity instanceof Player);
+                 break;
+             case ALWAYS:
+-                var10000 = true;
++                flag = true;
+                 break;
+             default:
+                 throw new IncompatibleClassChangeError();
+         }
+ 
+-        return var10000;
++        return flag;
+     }
+ 
+     public boolean isCreativePlayer() {
+-        Entity var2 = this.getEntity();
+-        if (var2 instanceof Player player) {
+-            if (player.getAbilities().instabuild) {
+-                return true;
++        Entity entity = this.getEntity();
++        boolean flag;
++
++        if (entity instanceof Player) {
++            Player entityhuman = (Player) entity;
++
++            if (entityhuman.getAbilities().instabuild) {
++                flag = true;
++                return flag;
+             }
+         }
+ 
+-        return false;
++        flag = false;
++        return flag;
+     }
+ 
+     @Nullable
+     public Vec3 getSourcePosition() {
+-        if (this.damageSourcePosition != null) {
+-            return this.damageSourcePosition;
+-        } else {
+-            return this.directEntity != null ? this.directEntity.position() : null;
+-        }
++        return this.damageSourcePosition != null ? this.damageSourcePosition : (this.directEntity != null ? this.directEntity.position() : null);
+     }
+ 
+     @Nullable
+@@ -145,10 +186,24 @@
+     }
+ 
+     public DamageType type() {
+-        return this.type.value();
++        return (DamageType) this.type.value();
+     }
+ 
+     public Holder<DamageType> typeHolder() {
+         return this.type;
+     }
++
++    // Paper start - add critical damage API
++    private boolean critical;
++    public boolean isCritical() {
++        return this.critical;
++    }
++    public DamageSource critical() {
++        return this.critical(true);
++    }
++    public DamageSource critical(boolean critical) {
++        this.critical = critical;
++        return this;
++    }
++    // Paper end
+ }

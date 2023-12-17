@@ -1,0 +1,7 @@
+
+v	java:S115
+"ZRename this constant name to match the regular expression '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.(»Ü°¼8Ä†Ï¯Ç1
+s
+java:S3008"VRename this field "CraftServer" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(¬õ­û8Å†Ï¯Ç1
+W
+java:S1118":Add a private constructor to hide the implicit public one.(¼ý÷Û8Æ†Ï¯Ç1

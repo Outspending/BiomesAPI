@@ -1,0 +1,120 @@
+--- a/net/minecraft/world/inventory/ResultContainer.java
++++ b/net/minecraft/world/inventory/ResultContainer.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.inventory;
+ 
++import java.util.Iterator;
+ import javax.annotation.Nullable;
+ import net.minecraft.core.NonNullList;
+ import net.minecraft.world.Container;
+@@ -8,11 +9,68 @@
+ import net.minecraft.world.item.ItemStack;
+ import net.minecraft.world.item.crafting.RecipeHolder;
+ 
++// CraftBukkit start
++import org.bukkit.Location;
++import org.bukkit.craftbukkit.v1_20_R2.entity.CraftHumanEntity;
++import org.bukkit.entity.HumanEntity;
++// CraftBukkit end
++
+ public class ResultContainer implements Container, RecipeCraftingHolder {
+-    private final NonNullList<ItemStack> itemStacks = NonNullList.withSize(1, ItemStack.EMPTY);
++
++    private final NonNullList<ItemStack> itemStacks;
+     @Nullable
+     private RecipeHolder<?> recipeUsed;
+ 
++    // CraftBukkit start
++    private int maxStack = MAX_STACK;
++
++    public java.util.List<ItemStack> getContents() {
++        return this.itemStacks;
++    }
++
++    public org.bukkit.inventory.InventoryHolder getOwner() {
++        // Paper start
++        if (this.holder == null && this.holderCreator != null) {
++            this.holder = this.holderCreator.get();
++        }
++        return this.holder; // Result slots don't get an owner
++        // Paper end - yes they do
++    }
++
++    // Don't need a transaction; the InventoryCrafting keeps track of it for us
++    public void onOpen(CraftHumanEntity who) {}
++    public void onClose(CraftHumanEntity who) {}
++    public java.util.List<HumanEntity> getViewers() {
++        return new java.util.ArrayList<HumanEntity>();
++    }
++
++    @Override
++    public int getMaxStackSize() {
++        return this.maxStack;
++    }
++
++    public void setMaxStackSize(int size) {
++        this.maxStack = size;
++    }
++
++    @Override
++    public Location getLocation() {
++        return null;
++    }
++    // CraftBukkit end
++    // Paper start
++    private @Nullable java.util.function.Supplier<? extends org.bukkit.inventory.InventoryHolder> holderCreator;
++    private @Nullable org.bukkit.inventory.InventoryHolder holder;
++    public ResultContainer(java.util.function.Supplier<? extends org.bukkit.inventory.InventoryHolder> holderCreator) {
++        this();
++        this.holderCreator = holderCreator;
++    }
++    // Paper end
++
++    public ResultContainer() {
++        this.itemStacks = NonNullList.withSize(1, ItemStack.EMPTY);
++    }
++
+     @Override
+     public int getContainerSize() {
+         return 1;
+@@ -20,18 +78,24 @@
+ 
+     @Override
+     public boolean isEmpty() {
+-        for(ItemStack itemStack : this.itemStacks) {
+-            if (!itemStack.isEmpty()) {
+-                return false;
++        Iterator iterator = this.itemStacks.iterator();
++
++        ItemStack itemstack;
++
++        do {
++            if (!iterator.hasNext()) {
++                return true;
+             }
+-        }
+ 
+-        return true;
++            itemstack = (ItemStack) iterator.next();
++        } while (itemstack.isEmpty());
++
++        return false;
+     }
+ 
+     @Override
+     public ItemStack getItem(int slot) {
+-        return this.itemStacks.get(0);
++        return (ItemStack) this.itemStacks.get(0);
+     }
+ 
+     @Override
+@@ -50,8 +114,7 @@
+     }
+ 
+     @Override
+-    public void setChanged() {
+-    }
++    public void setChanged() {}
+ 
+     @Override
+     public boolean stillValid(Player player) {

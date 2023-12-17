@@ -1,0 +1,337 @@
+--- a/net/minecraft/util/worldupdate/WorldUpgrader.java
++++ b/net/minecraft/util/worldupdate/WorldUpgrader.java
+@@ -2,7 +2,9 @@
+ 
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.ImmutableMap;
++import com.google.common.collect.ImmutableMap.Builder;
+ import com.google.common.collect.Lists;
++import com.google.common.collect.UnmodifiableIterator;
+ import com.google.common.util.concurrent.ThreadFactoryBuilder;
+ import com.mojang.datafixers.DataFixer;
+ import com.mojang.logging.LogUtils;
+@@ -12,8 +14,10 @@
+ import java.io.File;
+ import java.io.IOException;
+ import java.nio.file.Path;
++import java.util.Iterator;
+ import java.util.List;
+ import java.util.ListIterator;
++import java.util.Optional;
+ import java.util.Set;
+ import java.util.concurrent.CompletionException;
+ import java.util.concurrent.ThreadFactory;
+@@ -40,6 +44,7 @@
+ import org.slf4j.Logger;
+ 
+ public class WorldUpgrader {
++
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private static final ThreadFactory THREAD_FACTORY = (new ThreadFactoryBuilder()).setDaemon(true).build();
+     private final Registry<LevelStem> dimensions;
+@@ -54,21 +59,21 @@
+     private volatile int totalChunks;
+     private volatile int converted;
+     private volatile int skipped;
+-    private final Object2FloatMap<ResourceKey<Level>> progressMap = Object2FloatMaps.synchronize(new Object2FloatOpenCustomHashMap<>(Util.identityStrategy()));
++    private final Object2FloatMap<ResourceKey<Level>> progressMap = Object2FloatMaps.synchronize(new Object2FloatOpenCustomHashMap(Util.identityStrategy()));
+     private volatile Component status = Component.translatable("optimizeWorld.stage.counting");
+     public static final Pattern REGEX = Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$");
+     private final DimensionDataStorage overworldDataStorage;
+ 
+     public WorldUpgrader(LevelStorageSource.LevelStorageAccess session, DataFixer dataFixer, Registry<LevelStem> dimensionOptionsRegistry, boolean eraseCache) {
+         this.dimensions = dimensionOptionsRegistry;
+-        this.levels = dimensionOptionsRegistry.registryKeySet().stream().map(Registries::levelStemToLevel).collect(Collectors.toUnmodifiableSet());
++        this.levels = (Set) java.util.stream.Stream.of(session.dimensionType).map(Registries::levelStemToLevel).collect(Collectors.toUnmodifiableSet()); // CraftBukkit
+         this.eraseCache = eraseCache;
+         this.dataFixer = dataFixer;
+         this.levelStorage = session;
+         this.overworldDataStorage = new DimensionDataStorage(this.levelStorage.getDimensionPath(Level.OVERWORLD).resolve("data").toFile(), dataFixer);
+-        this.thread = THREAD_FACTORY.newThread(this::work);
++        this.thread = WorldUpgrader.THREAD_FACTORY.newThread(this::work);
+         this.thread.setUncaughtExceptionHandler((thread, throwable) -> {
+-            LOGGER.error("Error upgrading world", throwable);
++            WorldUpgrader.LOGGER.error("Error upgrading world", throwable);
+             this.status = Component.translatable("optimizeWorld.stage.failed");
+             this.finished = true;
+         });
+@@ -80,156 +85,200 @@
+ 
+         try {
+             this.thread.join();
+-        } catch (InterruptedException var2) {
++        } catch (InterruptedException interruptedexception) {
++            ;
+         }
+ 
+     }
+ 
+     private void work() {
+         this.totalChunks = 0;
+-        ImmutableMap.Builder<ResourceKey<Level>, ListIterator<ChunkPos>> builder = ImmutableMap.builder();
++        Builder<ResourceKey<Level>, ListIterator<ChunkPos>> builder = ImmutableMap.builder();
+ 
+-        for(ResourceKey<Level> resourceKey : this.levels) {
+-            List<ChunkPos> list = this.getAllChunkPos(resourceKey);
+-            builder.put(resourceKey, list.listIterator());
+-            this.totalChunks += list.size();
++        List list;
++
++        for (Iterator iterator = this.levels.iterator(); iterator.hasNext(); this.totalChunks += list.size()) {
++            ResourceKey<Level> resourcekey = (ResourceKey) iterator.next();
++
++            list = this.getAllChunkPos(resourcekey);
++            builder.put(resourcekey, list.listIterator());
+         }
+ 
+         if (this.totalChunks == 0) {
+             this.finished = true;
+         } else {
+-            float f = (float)this.totalChunks;
+-            ImmutableMap<ResourceKey<Level>, ListIterator<ChunkPos>> immutableMap = builder.build();
+-            ImmutableMap.Builder<ResourceKey<Level>, ChunkStorage> builder2 = ImmutableMap.builder();
++            float f = (float) this.totalChunks;
++            ImmutableMap<ResourceKey<Level>, ListIterator<ChunkPos>> immutablemap = builder.build();
++            Builder<ResourceKey<Level>, ChunkStorage> builder1 = ImmutableMap.builder();
++            Iterator iterator1 = this.levels.iterator();
+ 
+-            for(ResourceKey<Level> resourceKey2 : this.levels) {
+-                Path path = this.levelStorage.getDimensionPath(resourceKey2);
+-                builder2.put(resourceKey2, new ChunkStorage(path.resolve("region"), this.dataFixer, true));
++            while (iterator1.hasNext()) {
++                ResourceKey<Level> resourcekey1 = (ResourceKey) iterator1.next();
++                Path path = this.levelStorage.getDimensionPath(resourcekey1);
++
++                builder1.put(resourcekey1, new ChunkStorage(path.resolve("region"), this.dataFixer, true));
+             }
+ 
+-            ImmutableMap<ResourceKey<Level>, ChunkStorage> immutableMap2 = builder2.build();
+-            long l = Util.getMillis();
++            ImmutableMap<ResourceKey<Level>, ChunkStorage> immutablemap1 = builder1.build();
++            long i = Util.getMillis();
++
+             this.status = Component.translatable("optimizeWorld.stage.upgrading");
+ 
+-            while(this.running) {
+-                boolean bl = false;
+-                float g = 0.0F;
++            while (this.running) {
++                boolean flag = false;
++                float f1 = 0.0F;
+ 
+-                for(ResourceKey<Level> resourceKey3 : this.levels) {
+-                    ListIterator<ChunkPos> listIterator = immutableMap.get(resourceKey3);
+-                    ChunkStorage chunkStorage = immutableMap2.get(resourceKey3);
+-                    if (listIterator.hasNext()) {
+-                        ChunkPos chunkPos = listIterator.next();
+-                        boolean bl2 = false;
++                float f2;
++
++                for (Iterator iterator2 = this.levels.iterator(); iterator2.hasNext(); f1 += f2) {
++                    ResourceKey<Level> resourcekey2 = (ResourceKey) iterator2.next();
++                    ListIterator<ChunkPos> listiterator = (ListIterator) immutablemap.get(resourcekey2);
++                    ChunkStorage ichunkloader = (ChunkStorage) immutablemap1.get(resourcekey2);
++
++                    if (listiterator.hasNext()) {
++                        ChunkPos chunkcoordintpair = (ChunkPos) listiterator.next();
++                        boolean flag1 = false;
+ 
+                         try {
+-                            CompoundTag compoundTag = chunkStorage.read(chunkPos).join().orElse((CompoundTag)null);
+-                            if (compoundTag != null) {
+-                                int i = ChunkStorage.getVersion(compoundTag);
+-                                ChunkGenerator chunkGenerator = this.dimensions.getOrThrow(Registries.levelToLevelStem(resourceKey3)).generator();
+-                                CompoundTag compoundTag2 = chunkStorage.upgradeChunkTag(resourceKey3, () -> {
++                            CompoundTag nbttagcompound = (CompoundTag) ((Optional) ichunkloader.read(chunkcoordintpair).join()).orElse((Object) null);
++
++                            if (nbttagcompound != null) {
++                                int j = ChunkStorage.getVersion(nbttagcompound);
++                                ChunkGenerator chunkgenerator = ((LevelStem) this.dimensions.getOrThrow(Registries.levelToLevelStem(resourcekey2))).generator();
++                                CompoundTag nbttagcompound1 = ichunkloader.upgradeChunkTag(Registries.levelToLevelStem(resourcekey2), () -> { // CraftBukkit
+                                     return this.overworldDataStorage;
+-                                }, compoundTag, chunkGenerator.getTypeNameForDataFixer());
+-                                ChunkPos chunkPos2 = new ChunkPos(compoundTag2.getInt("xPos"), compoundTag2.getInt("zPos"));
+-                                if (!chunkPos2.equals(chunkPos)) {
+-                                    LOGGER.warn("Chunk {} has invalid position {}", chunkPos, chunkPos2);
++                                }, nbttagcompound, chunkgenerator.getTypeNameForDataFixer(), chunkcoordintpair, null); // CraftBukkit
++                                ChunkPos chunkcoordintpair1 = new ChunkPos(nbttagcompound1.getInt("xPos"), nbttagcompound1.getInt("zPos"));
++
++                                if (!chunkcoordintpair1.equals(chunkcoordintpair)) {
++                                    WorldUpgrader.LOGGER.warn("Chunk {} has invalid position {}", chunkcoordintpair, chunkcoordintpair1);
+                                 }
+ 
+-                                boolean bl3 = i < SharedConstants.getCurrentVersion().getDataVersion().getVersion();
++                                boolean flag2 = j < SharedConstants.getCurrentVersion().getDataVersion().getVersion();
++
+                                 if (this.eraseCache) {
+-                                    bl3 = bl3 || compoundTag2.contains("Heightmaps");
+-                                    compoundTag2.remove("Heightmaps");
+-                                    bl3 = bl3 || compoundTag2.contains("isLightOn");
+-                                    compoundTag2.remove("isLightOn");
+-                                    ListTag listTag = compoundTag2.getList("sections", 10);
++                                    flag2 = flag2 || nbttagcompound1.contains("Heightmaps");
++                                    nbttagcompound1.remove("Heightmaps");
++                                    flag2 = flag2 || nbttagcompound1.contains("isLightOn");
++                                    nbttagcompound1.remove("isLightOn");
++                                    ListTag nbttaglist = nbttagcompound1.getList("sections", 10);
+ 
+-                                    for(int j = 0; j < listTag.size(); ++j) {
+-                                        CompoundTag compoundTag3 = listTag.getCompound(j);
+-                                        bl3 = bl3 || compoundTag3.contains("BlockLight");
+-                                        compoundTag3.remove("BlockLight");
+-                                        bl3 = bl3 || compoundTag3.contains("SkyLight");
+-                                        compoundTag3.remove("SkyLight");
++                                    for (int k = 0; k < nbttaglist.size(); ++k) {
++                                        CompoundTag nbttagcompound2 = nbttaglist.getCompound(k);
++
++                                        flag2 = flag2 || nbttagcompound2.contains("BlockLight");
++                                        nbttagcompound2.remove("BlockLight");
++                                        flag2 = flag2 || nbttagcompound2.contains("SkyLight");
++                                        nbttagcompound2.remove("SkyLight");
+                                     }
+                                 }
+ 
+-                                if (bl3) {
+-                                    chunkStorage.write(chunkPos, compoundTag2);
+-                                    bl2 = true;
++                                if (flag2) {
++                                    ichunkloader.write(chunkcoordintpair, nbttagcompound1);
++                                    flag1 = true;
+                                 }
+                             }
+-                        } catch (CompletionException | ReportedException var26) {
+-                            Throwable throwable = var26.getCause();
++                        } catch (CompletionException | ReportedException reportedexception) {
++                            Throwable throwable = reportedexception.getCause();
++
+                             if (!(throwable instanceof IOException)) {
+-                                throw var26;
++                                throw reportedexception;
+                             }
+ 
+-                            LOGGER.error("Error upgrading chunk {}", chunkPos, throwable);
++                            WorldUpgrader.LOGGER.error("Error upgrading chunk {}", chunkcoordintpair, throwable);
++                            // Paper start
++                        } catch (IOException e) {
++                            WorldUpgrader.LOGGER.error("Error upgrading chunk {}", chunkcoordintpair, e);
+                         }
++                        // Paper end
+ 
+-                        if (bl2) {
++                        if (flag1) {
+                             ++this.converted;
+                         } else {
+                             ++this.skipped;
+                         }
+ 
+-                        bl = true;
++                        flag = true;
+                     }
+ 
+-                    float h = (float)listIterator.nextIndex() / f;
+-                    this.progressMap.put(resourceKey3, h);
+-                    g += h;
++                    f2 = (float) listiterator.nextIndex() / f;
++                    this.progressMap.put(resourcekey2, f2);
+                 }
+ 
+-                this.progress = g;
+-                if (!bl) {
++                this.progress = f1;
++                if (!flag) {
+                     this.running = false;
+                 }
+             }
+ 
+             this.status = Component.translatable("optimizeWorld.stage.finished");
++            UnmodifiableIterator unmodifiableiterator = immutablemap1.values().iterator();
++
++            while (unmodifiableiterator.hasNext()) {
++                ChunkStorage ichunkloader1 = (ChunkStorage) unmodifiableiterator.next();
+ 
+-            for(ChunkStorage chunkStorage2 : immutableMap2.values()) {
+                 try {
+-                    chunkStorage2.close();
+-                } catch (IOException var25) {
+-                    LOGGER.error("Error upgrading chunk", (Throwable)var25);
++                    ichunkloader1.close();
++                } catch (IOException ioexception) {
++                    WorldUpgrader.LOGGER.error("Error upgrading chunk", ioexception);
+                 }
+             }
+ 
+             this.overworldDataStorage.save();
+-            l = Util.getMillis() - l;
+-            LOGGER.info("World optimizaton finished after {} ms", (long)l);
++            i = Util.getMillis() - i;
++            WorldUpgrader.LOGGER.info("World optimizaton finished after {} ms", i);
+             this.finished = true;
+         }
+     }
+ 
+     private List<ChunkPos> getAllChunkPos(ResourceKey<Level> world) {
+         File file = this.levelStorage.getDimensionPath(world).toFile();
+-        File file2 = new File(file, "region");
+-        File[] files = file2.listFiles((directory, name) -> {
+-            return name.endsWith(".mca");
++        File file1 = new File(file, "region");
++        File[] afile = file1.listFiles((file2, s) -> {
++            return s.endsWith(".mca");
+         });
+-        if (files == null) {
++
++        if (afile == null) {
+             return ImmutableList.of();
+         } else {
+             List<ChunkPos> list = Lists.newArrayList();
++            File[] afile1 = afile;
++            int i = afile.length;
++
++            for (int j = 0; j < i; ++j) {
++                File file2 = afile1[j];
++                Matcher matcher = WorldUpgrader.REGEX.matcher(file2.getName());
+ 
+-            for(File file3 : files) {
+-                Matcher matcher = REGEX.matcher(file3.getName());
+                 if (matcher.matches()) {
+-                    int i = Integer.parseInt(matcher.group(1)) << 5;
+-                    int j = Integer.parseInt(matcher.group(2)) << 5;
++                    int k = Integer.parseInt(matcher.group(1)) << 5;
++                    int l = Integer.parseInt(matcher.group(2)) << 5;
+ 
+-                    try (RegionFile regionFile = new RegionFile(file3.toPath(), file2.toPath(), true)) {
+-                        for(int k = 0; k < 32; ++k) {
+-                            for(int l = 0; l < 32; ++l) {
+-                                ChunkPos chunkPos = new ChunkPos(k + i, l + j);
+-                                if (regionFile.doesChunkExist(chunkPos)) {
+-                                    list.add(chunkPos);
++                    try {
++                        RegionFile regionfile = new RegionFile(file2.toPath(), file1.toPath(), true);
++
++                        try {
++                            for (int i1 = 0; i1 < 32; ++i1) {
++                                for (int j1 = 0; j1 < 32; ++j1) {
++                                    ChunkPos chunkcoordintpair = new ChunkPos(i1 + k, j1 + l);
++
++                                    if (regionfile.doesChunkExist(chunkcoordintpair)) {
++                                        list.add(chunkcoordintpair);
++                                    }
+                                 }
+                             }
++                        } catch (Throwable throwable) {
++                            try {
++                                regionfile.close();
++                            } catch (Throwable throwable1) {
++                                throwable.addSuppressed(throwable1);
++                            }
++
++                            throw throwable;
+                         }
+-                    } catch (Throwable var19) {
++
++                        regionfile.close();
++                    } catch (Throwable throwable2) {
++                        ;
+                     }
+                 }
+             }

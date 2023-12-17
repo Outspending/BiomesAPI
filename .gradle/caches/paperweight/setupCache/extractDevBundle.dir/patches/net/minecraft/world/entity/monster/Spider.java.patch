@@ -1,0 +1,194 @@
+--- a/net/minecraft/world/entity/monster/Spider.java
++++ b/net/minecraft/world/entity/monster/Spider.java
+@@ -45,6 +45,7 @@
+ import org.joml.Vector3f;
+ 
+ public class Spider extends Monster {
++
+     private static final EntityDataAccessor<Byte> DATA_FLAGS_ID = SynchedEntityData.defineId(Spider.class, EntityDataSerializers.BYTE);
+     private static final float SPIDER_SPECIAL_EFFECT_CHANCE = 0.1F;
+ 
+@@ -60,7 +61,7 @@
+         this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8D));
+         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
++        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, new Class[0]));
+         this.targetSelector.addGoal(2, new Spider.SpiderTargetGoal<>(this, Player.class));
+         this.targetSelector.addGoal(3, new Spider.SpiderTargetGoal<>(this, IronGolem.class));
+     }
+@@ -78,20 +79,20 @@
+     @Override
+     protected void defineSynchedData() {
+         super.defineSynchedData();
+-        this.entityData.define(DATA_FLAGS_ID, (byte)0);
++        this.entityData.define(Spider.DATA_FLAGS_ID, (byte) 0);
+     }
+ 
+     @Override
+     public void tick() {
+         super.tick();
+         if (!this.level().isClientSide) {
+-            this.setClimbing(this.horizontalCollision);
++            this.setClimbing(this.horizontalCollision && (this.level().paperConfig().entities.behavior.allowSpiderWorldBorderClimbing || !collidingWithWorldBorder)); // Paper
+         }
+ 
+     }
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.MOVEMENT_SPEED, (double)0.3F);
++        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.MOVEMENT_SPEED, 0.30000001192092896D);
+     }
+ 
+     @Override
+@@ -134,53 +135,58 @@
+ 
+     @Override
+     public boolean canBeAffected(MobEffectInstance effect) {
+-        return effect.getEffect() == MobEffects.POISON ? false : super.canBeAffected(effect);
++        return effect.getEffect() == MobEffects.POISON && this.level().paperConfig().entities.mobEffects.spidersImmuneToPoisonEffect ? false : super.canBeAffected(effect); // Paper
+     }
+ 
+     public boolean isClimbing() {
+-        return (this.entityData.get(DATA_FLAGS_ID) & 1) != 0;
++        return ((Byte) this.entityData.get(Spider.DATA_FLAGS_ID) & 1) != 0;
+     }
+ 
+     public void setClimbing(boolean climbing) {
+-        byte b = this.entityData.get(DATA_FLAGS_ID);
++        byte b0 = (Byte) this.entityData.get(Spider.DATA_FLAGS_ID);
++
+         if (climbing) {
+-            b = (byte)(b | 1);
++            b0 = (byte) (b0 | 1);
+         } else {
+-            b = (byte)(b & -2);
++            b0 &= -2;
+         }
+ 
+-        this.entityData.set(DATA_FLAGS_ID, b);
++        this.entityData.set(Spider.DATA_FLAGS_ID, b0);
+     }
+ 
+     @Nullable
+     @Override
+     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, MobSpawnType spawnReason, @Nullable SpawnGroupData entityData, @Nullable CompoundTag entityNbt) {
+-        entityData = super.finalizeSpawn(world, difficulty, spawnReason, entityData, entityNbt);
+-        RandomSource randomSource = world.getRandom();
+-        if (randomSource.nextInt(100) == 0) {
+-            Skeleton skeleton = EntityType.SKELETON.create(this.level());
+-            if (skeleton != null) {
+-                skeleton.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), 0.0F);
+-                skeleton.finalizeSpawn(world, difficulty, spawnReason, (SpawnGroupData)null, (CompoundTag)null);
+-                skeleton.startRiding(this);
++        Object object = super.finalizeSpawn(world, difficulty, spawnReason, entityData, entityNbt);
++        RandomSource randomsource = world.getRandom();
++
++        if (randomsource.nextInt(100) == 0) {
++            Skeleton entityskeleton = (Skeleton) EntityType.SKELETON.create(this.level());
++
++            if (entityskeleton != null) {
++                entityskeleton.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), 0.0F);
++                entityskeleton.finalizeSpawn(world, difficulty, spawnReason, (SpawnGroupData) null, (CompoundTag) null);
++                entityskeleton.startRiding(this);
+             }
+         }
+ 
+-        if (entityData == null) {
+-            entityData = new Spider.SpiderEffectsGroupData();
+-            if (world.getDifficulty() == Difficulty.HARD && randomSource.nextFloat() < 0.1F * difficulty.getSpecialMultiplier()) {
+-                ((Spider.SpiderEffectsGroupData)entityData).setRandomEffect(randomSource);
++        if (object == null) {
++            object = new Spider.SpiderEffectsGroupData();
++            if (world.getDifficulty() == Difficulty.HARD && randomsource.nextFloat() < 0.1F * difficulty.getSpecialMultiplier()) {
++                ((Spider.SpiderEffectsGroupData) object).setRandomEffect(randomsource);
+             }
+         }
+ 
+-        if (entityData instanceof Spider.SpiderEffectsGroupData spiderEffectsGroupData) {
+-            MobEffect mobEffect = spiderEffectsGroupData.effect;
+-            if (mobEffect != null) {
+-                this.addEffect(new MobEffectInstance(mobEffect, -1));
++        if (object instanceof Spider.SpiderEffectsGroupData) {
++            Spider.SpiderEffectsGroupData entityspider_groupdataspider = (Spider.SpiderEffectsGroupData) object;
++            MobEffect mobeffectlist = entityspider_groupdataspider.effect;
++
++            if (mobeffectlist != null) {
++                this.addEffect(new MobEffectInstance(mobeffectlist, -1), null, org.bukkit.event.entity.EntityPotionEffectEvent.Cause.SPIDER_SPAWN, world instanceof net.minecraft.server.level.ServerLevel); // CraftBukkit // Paper - only fire the effect event if this is happening in a ServerLevel
+             }
+         }
+ 
+-        return entityData;
++        return (SpawnGroupData) object;
+     }
+ 
+     @Override
+@@ -193,7 +199,8 @@
+         return vehicle.getBbWidth() <= this.getBbWidth() ? -0.3125F : 0.0F;
+     }
+ 
+-    static class SpiderAttackGoal extends MeleeAttackGoal {
++    private static class SpiderAttackGoal extends MeleeAttackGoal {
++
+         public SpiderAttackGoal(Spider spider) {
+             super(spider, 1.0D, true);
+         }
+@@ -206,8 +213,9 @@
+         @Override
+         public boolean canContinueToUse() {
+             float f = this.mob.getLightLevelDependentMagicValue();
++
+             if (f >= 0.5F && this.mob.getRandom().nextInt(100) == 0) {
+-                this.mob.setTarget((LivingEntity)null);
++                this.mob.setTarget((LivingEntity) null);
+                 return false;
+             } else {
+                 return super.canContinueToUse();
+@@ -215,12 +223,30 @@
+         }
+     }
+ 
++    private static class SpiderTargetGoal<T extends LivingEntity> extends NearestAttackableTargetGoal<T> {
++
++        public SpiderTargetGoal(Spider spider, Class<T> targetEntityClass) {
++            super(spider, targetEntityClass, true);
++        }
++
++        @Override
++        public boolean canUse() {
++            float f = this.mob.getLightLevelDependentMagicValue();
++
++            return f >= 0.5F ? false : super.canUse();
++        }
++    }
++
+     public static class SpiderEffectsGroupData implements SpawnGroupData {
++
+         @Nullable
+         public MobEffect effect;
+ 
++        public SpiderEffectsGroupData() {}
++
+         public void setRandomEffect(RandomSource random) {
+             int i = random.nextInt(5);
++
+             if (i <= 1) {
+                 this.effect = MobEffects.MOVEMENT_SPEED;
+             } else if (i <= 2) {
+@@ -233,16 +259,4 @@
+ 
+         }
+     }
+-
+-    static class SpiderTargetGoal<T extends LivingEntity> extends NearestAttackableTargetGoal<T> {
+-        public SpiderTargetGoal(Spider spider, Class<T> targetEntityClass) {
+-            super(spider, targetEntityClass, true);
+-        }
+-
+-        @Override
+-        public boolean canUse() {
+-            float f = this.mob.getLightLevelDependentMagicValue();
+-            return f >= 0.5F ? false : super.canUse();
+-        }
+-    }
+ }

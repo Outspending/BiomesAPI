@@ -1,0 +1,23 @@
+--- a/net/minecraft/world/effect/HungerMobEffect.java
++++ b/net/minecraft/world/effect/HungerMobEffect.java
+@@ -4,6 +4,7 @@
+ import net.minecraft.world.entity.player.Player;
+ 
+ class HungerMobEffect extends MobEffect {
++
+     protected HungerMobEffect(MobEffectCategory category, int color) {
+         super(category, color);
+     }
+@@ -11,8 +12,10 @@
+     @Override
+     public void applyEffectTick(LivingEntity entity, int amplifier) {
+         super.applyEffectTick(entity, amplifier);
+-        if (entity instanceof Player player) {
+-            player.causeFoodExhaustion(0.005F * (float)(amplifier + 1));
++        if (entity instanceof Player) {
++            Player entityhuman = (Player) entity;
++
++            entityhuman.causeFoodExhaustion(0.005F * (float) (amplifier + 1), org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.HUNGER_EFFECT); // CraftBukkit - EntityExhaustionEvent
+         }
+ 
+     }

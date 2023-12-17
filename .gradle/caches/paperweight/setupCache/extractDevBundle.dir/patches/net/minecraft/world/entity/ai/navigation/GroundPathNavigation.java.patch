@@ -1,0 +1,44 @@
+--- a/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
++++ b/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
+@@ -41,7 +41,7 @@
+     }
+ 
+     @Override
+-    public Path createPath(BlockPos target, int distance) {
++    public Path createPath(BlockPos target, @javax.annotation.Nullable Entity entity, int distance) { // Paper
+         LevelChunk levelChunk = this.level.getChunkSource().getChunkNow(SectionPos.blockToSectionCoord(target.getX()), SectionPos.blockToSectionCoord(target.getZ()));
+         if (levelChunk == null) {
+             return null;
+@@ -52,7 +52,7 @@
+                 }
+ 
+                 if (blockPos.getY() > this.level.getMinBuildHeight()) {
+-                    return super.createPath(blockPos.above(), distance);
++                    return super.createPath(blockPos.above(), entity, distance); // Paper
+                 }
+ 
+                 while(blockPos.getY() < this.level.getMaxBuildHeight() && levelChunk.getBlockState(blockPos).isAir()) {
+@@ -63,20 +63,20 @@
+             }
+ 
+             if (!levelChunk.getBlockState(target).isSolid()) {
+-                return super.createPath(target, distance);
++                return super.createPath(target, entity, distance); // Paper
+             } else {
+                 BlockPos blockPos2;
+                 for(blockPos2 = target.above(); blockPos2.getY() < this.level.getMaxBuildHeight() && levelChunk.getBlockState(blockPos2).isSolid(); blockPos2 = blockPos2.above()) {
+                 }
+ 
+-                return super.createPath(blockPos2, distance);
++                return super.createPath(blockPos2, entity, distance); // Paper
+             }
+         }
+     }
+ 
+     @Override
+     public Path createPath(Entity entity, int distance) {
+-        return this.createPath(entity.blockPosition(), distance);
++        return this.createPath(entity.blockPosition(), entity, distance); // Paper - Forward target entity
+     }
+ 
+     private int getSurfaceY() {

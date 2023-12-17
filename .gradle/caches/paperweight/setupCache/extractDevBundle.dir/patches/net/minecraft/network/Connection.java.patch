@@ -1,0 +1,948 @@
+--- a/net/minecraft/network/Connection.java
++++ b/net/minecraft/network/Connection.java
+@@ -9,6 +9,7 @@
+ import io.netty.channel.ChannelException;
+ import io.netty.channel.ChannelFuture;
+ import io.netty.channel.ChannelFutureListener;
++import io.netty.channel.ChannelHandler;
+ import io.netty.channel.ChannelHandlerContext;
+ import io.netty.channel.ChannelInitializer;
+ import io.netty.channel.ChannelOption;
+@@ -40,6 +41,7 @@
+ import net.minecraft.SharedConstants;
+ import net.minecraft.Util;
+ import net.minecraft.network.chat.Component;
++import net.minecraft.network.chat.MutableComponent;
+ import net.minecraft.network.protocol.Packet;
+ import net.minecraft.network.protocol.PacketFlow;
+ import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+@@ -57,33 +59,39 @@
+ import org.slf4j.MarkerFactory;
+ 
+ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
++
+     private static final float AVERAGE_PACKETS_SMOOTHING = 0.75F;
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final Marker ROOT_MARKER = MarkerFactory.getMarker("NETWORK");
+-    public static final Marker PACKET_MARKER = Util.make(MarkerFactory.getMarker("NETWORK_PACKETS"), (marker) -> {
+-        marker.add(ROOT_MARKER);
++    public static final Marker PACKET_MARKER = (Marker) Util.make(MarkerFactory.getMarker("NETWORK_PACKETS"), (marker) -> {
++        marker.add(Connection.ROOT_MARKER);
+     });
+-    public static final Marker PACKET_RECEIVED_MARKER = Util.make(MarkerFactory.getMarker("PACKET_RECEIVED"), (marker) -> {
+-        marker.add(PACKET_MARKER);
++    public static final Marker PACKET_RECEIVED_MARKER = (Marker) Util.make(MarkerFactory.getMarker("PACKET_RECEIVED"), (marker) -> {
++        marker.add(Connection.PACKET_MARKER);
+     });
+-    public static final Marker PACKET_SENT_MARKER = Util.make(MarkerFactory.getMarker("PACKET_SENT"), (marker) -> {
+-        marker.add(PACKET_MARKER);
++    public static final Marker PACKET_SENT_MARKER = (Marker) Util.make(MarkerFactory.getMarker("PACKET_SENT"), (marker) -> {
++        marker.add(Connection.PACKET_MARKER);
+     });
+     public static final AttributeKey<ConnectionProtocol.CodecData<?>> ATTRIBUTE_SERVERBOUND_PROTOCOL = AttributeKey.valueOf("serverbound_protocol");
+     public static final AttributeKey<ConnectionProtocol.CodecData<?>> ATTRIBUTE_CLIENTBOUND_PROTOCOL = AttributeKey.valueOf("clientbound_protocol");
+     public static final Supplier<NioEventLoopGroup> NETWORK_WORKER_GROUP = Suppliers.memoize(() -> {
+-        return new NioEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Client IO #%d").setDaemon(true).build());
++        return new NioEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Client IO #%d").setDaemon(true).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(LOGGER)).build()); // Paper
+     });
+     public static final Supplier<EpollEventLoopGroup> NETWORK_EPOLL_WORKER_GROUP = Suppliers.memoize(() -> {
+-        return new EpollEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Epoll Client IO #%d").setDaemon(true).build());
++        return new EpollEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Epoll Client IO #%d").setDaemon(true).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(LOGGER)).build()); // Paper
+     });
+     public static final Supplier<DefaultEventLoopGroup> LOCAL_WORKER_GROUP = Suppliers.memoize(() -> {
+-        return new DefaultEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Local Client IO #%d").setDaemon(true).build());
++        return new DefaultEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Local Client IO #%d").setDaemon(true).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(LOGGER)).build()); // Paper
+     });
+     private final PacketFlow receiving;
+-    private final Queue<Consumer<Connection>> pendingActions = Queues.newConcurrentLinkedQueue();
++    private final Queue<WrappedConsumer> pendingActions = Queues.newConcurrentLinkedQueue();
+     public Channel channel;
+     public SocketAddress address;
++    // Spigot Start
++    public java.util.UUID spoofedUUID;
++    public com.mojang.authlib.properties.Property[] spoofedProfile;
++    public boolean preparing = true;
++    // Spigot End
+     @Nullable
+     private volatile PacketListener disconnectListener;
+     @Nullable
+@@ -102,15 +110,56 @@
+     private volatile Component delayedDisconnect;
+     @Nullable
+     BandwidthDebugMonitor bandwidthDebugMonitor;
++    public String hostname = ""; // CraftBukkit - add field
++    // Paper start - NetworkClient implementation
++    public int protocolVersion;
++    public java.net.InetSocketAddress virtualHost;
++    private static boolean enableExplicitFlush = Boolean.getBoolean("paper.explicit-flush");
++    // Paper end
++    // Paper start - Optimize network
++    public boolean isPending = true;
++    public boolean queueImmunity;
++    // Paper end - Optimize network
++
++    // Paper start - add utility methods
++    public final net.minecraft.server.level.ServerPlayer getPlayer() {
++        if (this.packetListener instanceof net.minecraft.server.network.ServerGamePacketListenerImpl impl) {
++            return impl.player;
++        } else if (this.packetListener instanceof net.minecraft.server.network.ServerCommonPacketListenerImpl impl) {
++            org.bukkit.craftbukkit.v1_20_R2.entity.CraftPlayer player = impl.getCraftPlayer();
++            return player == null ? null : player.getHandle();
++        }
++        return null;
++    }
++    // Paper end - add utility methods
++    // Paper start - packet limiter
++    protected final Object PACKET_LIMIT_LOCK = new Object();
++    protected final @Nullable io.papermc.paper.util.IntervalledCounter allPacketCounts = io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.allPackets.isEnabled() ? new io.papermc.paper.util.IntervalledCounter(
++        (long)(io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.allPackets.interval() * 1.0e9)
++    ) : null;
++    protected final java.util.Map<Class<? extends net.minecraft.network.protocol.Packet<?>>, io.papermc.paper.util.IntervalledCounter> packetSpecificLimits = new java.util.HashMap<>();
++
++    private boolean stopReadingPackets;
++    private void killForPacketSpam() {
++        this.sendPacket(new ClientboundDisconnectPacket(io.papermc.paper.adventure.PaperAdventure.asVanilla(io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.kickMessage)), PacketSendListener.thenRun(() -> {
++            this.disconnect(io.papermc.paper.adventure.PaperAdventure.asVanilla(io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.kickMessage));
++        }), true);
++        this.setReadOnly();
++        this.stopReadingPackets = true;
++    }
++    // Paper end - packet limiter
+ 
+     public Connection(PacketFlow side) {
+         this.receiving = side;
+     }
+ 
+-    public void channelActive(ChannelHandlerContext channelHandlerContext) throws Exception {
+-        super.channelActive(channelHandlerContext);
+-        this.channel = channelHandlerContext.channel();
++    public void channelActive(ChannelHandlerContext channelhandlercontext) throws Exception {
++        super.channelActive(channelhandlercontext);
++        this.channel = channelhandlercontext.channel();
+         this.address = this.channel.remoteAddress();
++        // Spigot Start
++        this.preparing = false;
++        // Spigot End
+         if (this.delayedDisconnect != null) {
+             this.disconnect(this.delayedDisconnect);
+         }
+@@ -118,63 +167,137 @@
+     }
+ 
+     public static void setInitialProtocolAttributes(Channel channel) {
+-        channel.attr(ATTRIBUTE_SERVERBOUND_PROTOCOL).set(ConnectionProtocol.HANDSHAKING.codec(PacketFlow.SERVERBOUND));
+-        channel.attr(ATTRIBUTE_CLIENTBOUND_PROTOCOL).set(ConnectionProtocol.HANDSHAKING.codec(PacketFlow.CLIENTBOUND));
++        channel.attr(Connection.ATTRIBUTE_SERVERBOUND_PROTOCOL).set(ConnectionProtocol.HANDSHAKING.codec(PacketFlow.SERVERBOUND));
++        channel.attr(Connection.ATTRIBUTE_CLIENTBOUND_PROTOCOL).set(ConnectionProtocol.HANDSHAKING.codec(PacketFlow.CLIENTBOUND));
+     }
+ 
+-    public void channelInactive(ChannelHandlerContext channelHandlerContext) {
++    public void channelInactive(ChannelHandlerContext channelhandlercontext) {
+         this.disconnect(Component.translatable("disconnect.endOfStream"));
+     }
+ 
+-    public void exceptionCaught(ChannelHandlerContext channelHandlerContext, Throwable throwable) {
++    public void exceptionCaught(ChannelHandlerContext channelhandlercontext, Throwable throwable) {
++        // Paper start
++        if (throwable instanceof io.netty.handler.codec.EncoderException && throwable.getCause() instanceof PacketEncoder.PacketTooLargeException packetTooLargeException) {
++            final Packet<?> packet = packetTooLargeException.getPacket();
++            final io.netty.util.Attribute<ConnectionProtocol.CodecData<?>> codecDataAttribute = channelhandlercontext.channel().attr(packetTooLargeException.codecKey);
++            if (packet.packetTooLarge(this)) {
++                ProtocolSwapHandler.swapProtocolIfNeeded(codecDataAttribute, packet);
++                return;
++            } else if (packet.isSkippable()) {
++                Connection.LOGGER.debug("Skipping packet due to errors", throwable.getCause());
++                ProtocolSwapHandler.swapProtocolIfNeeded(codecDataAttribute, packet);
++                return;
++            } else {
++                throwable = throwable.getCause();
++            }
++        }
++        // Paper end
+         if (throwable instanceof SkipPacketException) {
+-            LOGGER.debug("Skipping packet due to errors", throwable.getCause());
++            Connection.LOGGER.debug("Skipping packet due to errors", throwable.getCause());
+         } else {
+-            boolean bl = !this.handlingFault;
++            boolean flag = !this.handlingFault;
++
+             this.handlingFault = true;
+             if (this.channel.isOpen()) {
++                net.minecraft.server.level.ServerPlayer player = this.getPlayer(); // Paper
+                 if (throwable instanceof TimeoutException) {
+-                    LOGGER.debug("Timeout", throwable);
++                    Connection.LOGGER.debug("Timeout", throwable);
++                    if (player != null) player.quitReason = org.bukkit.event.player.PlayerQuitEvent.QuitReason.TIMED_OUT; // Paper
+                     this.disconnect(Component.translatable("disconnect.timeout"));
+                 } else {
+-                    Component component = Component.translatable("disconnect.genericReason", "Internal Exception: " + throwable);
+-                    if (bl) {
+-                        LOGGER.debug("Failed to sent packet", throwable);
++                    MutableComponent ichatmutablecomponent = Component.translatable("disconnect.genericReason", "Internal Exception: " + throwable);
++
++                    if (player != null) player.quitReason = org.bukkit.event.player.PlayerQuitEvent.QuitReason.ERRONEOUS_STATE; // Paper
++                    if (flag) {
++                        Connection.LOGGER.debug("Failed to sent packet", throwable);
+                         if (this.getSending() == PacketFlow.CLIENTBOUND) {
+-                            ConnectionProtocol connectionProtocol = this.channel.attr(ATTRIBUTE_CLIENTBOUND_PROTOCOL).get().protocol();
+-                            Packet<?> packet = (Packet<?>)(connectionProtocol == ConnectionProtocol.LOGIN ? new ClientboundLoginDisconnectPacket(component) : new ClientboundDisconnectPacket(component));
+-                            this.send(packet, PacketSendListener.thenRun(() -> {
+-                                this.disconnect(component);
++                            ConnectionProtocol enumprotocol = ((ConnectionProtocol.CodecData) this.channel.attr(Connection.ATTRIBUTE_CLIENTBOUND_PROTOCOL).get()).protocol();
++                            Packet<?> packet = enumprotocol == ConnectionProtocol.LOGIN ? new ClientboundLoginDisconnectPacket(ichatmutablecomponent) : new ClientboundDisconnectPacket(ichatmutablecomponent);
++
++                            this.send((Packet) packet, PacketSendListener.thenRun(() -> {
++                                this.disconnect(ichatmutablecomponent);
+                             }));
+                         } else {
+-                            this.disconnect(component);
++                            this.disconnect(ichatmutablecomponent);
+                         }
+ 
+                         this.setReadOnly();
+                     } else {
+-                        LOGGER.debug("Double fault", throwable);
+-                        this.disconnect(component);
++                        Connection.LOGGER.debug("Double fault", throwable);
++                        this.disconnect(ichatmutablecomponent);
+                     }
+                 }
+ 
+             }
+         }
++        if (net.minecraft.server.MinecraftServer.getServer().isDebugging()) io.papermc.paper.util.TraceUtil.printStackTrace(throwable); // Spigot // Paper
+     }
+ 
+-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet<?> packet) {
++    protected void channelRead0(ChannelHandlerContext channelhandlercontext, Packet<?> packet) {
+         if (this.channel.isOpen()) {
+-            PacketListener packetListener = this.packetListener;
+-            if (packetListener == null) {
++            PacketListener packetlistener = this.packetListener;
++
++            if (packetlistener == null) {
+                 throw new IllegalStateException("Received a packet before the packet listener was initialized");
+             } else {
+-                if (packetListener.shouldHandleMessage(packet)) {
++                // Paper start - packet limiter
++                if (this.stopReadingPackets) {
++                    return;
++                }
++                if (this.allPacketCounts != null ||
++                    io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.overrides.containsKey(packet.getClass())) {
++                    long time = System.nanoTime();
++                    synchronized (PACKET_LIMIT_LOCK) {
++                        if (this.allPacketCounts != null) {
++                            this.allPacketCounts.updateAndAdd(1, time);
++                            if (this.allPacketCounts.getRate() >= io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.allPackets.maxPacketRate()) {
++                                this.killForPacketSpam();
++                                return;
++                            }
++                        }
++
++                        for (Class<?> check = packet.getClass(); check != Object.class; check = check.getSuperclass()) {
++                            io.papermc.paper.configuration.GlobalConfiguration.PacketLimiter.PacketLimit packetSpecificLimit =
++                                io.papermc.paper.configuration.GlobalConfiguration.get().packetLimiter.overrides.get(check);
++                            if (packetSpecificLimit == null || !packetSpecificLimit.isEnabled()) {
++                                continue;
++                            }
++                            io.papermc.paper.util.IntervalledCounter counter = this.packetSpecificLimits.computeIfAbsent((Class)check, (clazz) -> {
++                                return new io.papermc.paper.util.IntervalledCounter((long)(packetSpecificLimit.interval() * 1.0e9));
++                            });
++                            counter.updateAndAdd(1, time);
++                            if (counter.getRate() >= packetSpecificLimit.maxPacketRate()) {
++                                switch (packetSpecificLimit.action()) {
++                                    case DROP:
++                                        return;
++                                    case KICK:
++                                        String deobfedPacketName = io.papermc.paper.util.ObfHelper.INSTANCE.deobfClassName(check.getName());
++
++                                        String playerName;
++                                        if (this.packetListener instanceof net.minecraft.server.network.ServerCommonPacketListenerImpl impl) {
++                                            playerName = impl.getOwner().getName();
++                                        } else {
++                                            playerName = this.getLoggableAddress(net.minecraft.server.MinecraftServer.getServer().logIPs());
++                                        }
++
++                                        Connection.LOGGER.warn("{} kicked for packet spamming: {}", playerName, deobfedPacketName.substring(deobfedPacketName.lastIndexOf(".") + 1));
++                                        this.killForPacketSpam();
++                                        return;
++                                }
++                            }
++                        }
++                    }
++                }
++                // Paper end - packet limiter
++                if (packetlistener.shouldHandleMessage(packet)) {
+                     try {
+-                        genericsFtw(packet, packetListener);
+-                    } catch (RunningOnDifferentThreadException var5) {
+-                    } catch (RejectedExecutionException var6) {
++                        Connection.genericsFtw(packet, packetlistener);
++                    } catch (RunningOnDifferentThreadException cancelledpackethandleexception) {
++                        ;
++                    } catch (RejectedExecutionException rejectedexecutionexception) {
+                         this.disconnect(Component.translatable("multiplayer.disconnect.server_shutdown"));
+-                    } catch (ClassCastException var7) {
+-                        LOGGER.error("Received {} that couldn't be processed", packet.getClass(), var7);
++                    } catch (ClassCastException classcastexception) {
++                        Connection.LOGGER.error("Received {} that couldn't be processed", packet.getClass(), classcastexception);
+                         this.disconnect(Component.translatable("multiplayer.disconnect.invalid_packet"));
+                     }
+ 
+@@ -186,7 +309,7 @@
+     }
+ 
+     private static <T extends PacketListener> void genericsFtw(Packet<T> packet, PacketListener listener) {
+-        packet.handle((T)listener);
++        packet.handle((T) listener); // CraftBukkit - decompile error
+     }
+ 
+     public void suspendInboundAfterProtocolChange() {
+@@ -198,15 +321,17 @@
+     }
+ 
+     public void setListener(PacketListener packetListener) {
+-        Validate.notNull(packetListener, "packetListener");
+-        PacketFlow packetFlow = packetListener.flow();
+-        if (packetFlow != this.receiving) {
+-            throw new IllegalStateException("Trying to set listener for wrong side: connection is " + this.receiving + ", but listener is " + packetFlow);
++        Validate.notNull(packetListener, "packetListener", new Object[0]);
++        PacketFlow enumprotocoldirection = packetListener.flow();
++
++        if (enumprotocoldirection != this.receiving) {
++            throw new IllegalStateException("Trying to set listener for wrong side: connection is " + this.receiving + ", but listener is " + enumprotocoldirection);
+         } else {
+-            ConnectionProtocol connectionProtocol = packetListener.protocol();
+-            ConnectionProtocol connectionProtocol2 = this.channel.attr(getProtocolKey(packetFlow)).get().protocol();
+-            if (connectionProtocol2 != connectionProtocol) {
+-                throw new IllegalStateException("Trying to set listener for protocol " + connectionProtocol.id() + ", but current " + packetFlow + " protocol is " + connectionProtocol2.id());
++            ConnectionProtocol enumprotocol = packetListener.protocol();
++            ConnectionProtocol enumprotocol1 = ((ConnectionProtocol.CodecData) this.channel.attr(Connection.getProtocolKey(enumprotocoldirection)).get()).protocol();
++
++            if (enumprotocol1 != enumprotocol) {
++                throw new IllegalStateException("Trying to set listener for protocol " + enumprotocol.id() + ", but current " + enumprotocoldirection + " protocol is " + enumprotocol1.id());
+             } else {
+                 this.packetListener = packetListener;
+                 this.disconnectListener = null;
+@@ -234,19 +359,19 @@
+ 
+     private void initiateServerboundConnection(String address, int port, PacketListener listener, ClientIntent intent) {
+         this.disconnectListener = listener;
+-        this.runOnceConnected((connection) -> {
+-            connection.setClientboundProtocolAfterHandshake(intent);
++        this.runOnceConnected((networkmanager) -> {
++            networkmanager.setClientboundProtocolAfterHandshake(intent);
+             this.setListener(listener);
+-            connection.sendPacket(new ClientIntentionPacket(SharedConstants.getCurrentVersion().getProtocolVersion(), address, port, intent), (PacketSendListener)null, true);
++            networkmanager.sendPacket(new ClientIntentionPacket(SharedConstants.getCurrentVersion().getProtocolVersion(), address, port, intent), (PacketSendListener) null, true);
+         });
+     }
+ 
+     public void setClientboundProtocolAfterHandshake(ClientIntent intent) {
+-        this.channel.attr(ATTRIBUTE_CLIENTBOUND_PROTOCOL).set(intent.protocol().codec(PacketFlow.CLIENTBOUND));
++        this.channel.attr(Connection.ATTRIBUTE_CLIENTBOUND_PROTOCOL).set(intent.protocol().codec(PacketFlow.CLIENTBOUND));
+     }
+ 
+     public void send(Packet<?> packet) {
+-        this.send(packet, (PacketSendListener)null);
++        this.send(packet, (PacketSendListener) null);
+     }
+ 
+     public void send(Packet<?> packet, @Nullable PacketSendListener callbacks) {
+@@ -254,15 +379,39 @@
+     }
+ 
+     public void send(Packet<?> packet, @Nullable PacketSendListener callbacks, boolean flush) {
+-        if (this.isConnected()) {
+-            this.flushQueue();
++        // Paper start - Optimize network: Handle oversized packets better
++        final boolean connected = this.isConnected();
++        if (!connected && !this.preparing) {
++            return;
++        }
++
++        packet.onPacketDispatch(this.getPlayer());
++        if (connected && (InnerUtil.canSendImmediate(this, packet)
++            || (io.papermc.paper.util.MCUtil.isMainThread() && packet.isReady() && this.pendingActions.isEmpty()
++            && (packet.getExtraPackets() == null || packet.getExtraPackets().isEmpty())))) {
+             this.sendPacket(packet, callbacks, flush);
+         } else {
+-            this.pendingActions.add((connection) -> {
+-                connection.sendPacket(packet, callbacks, flush);
+-            });
+-        }
++            // Write the packets to the queue, then flush - antixray hooks there already
++            final java.util.List<Packet<?>> extraPackets = InnerUtil.buildExtraPackets(packet);
++            final boolean hasExtraPackets = extraPackets != null && !extraPackets.isEmpty();
++            if (!hasExtraPackets) {
++                this.pendingActions.add(new PacketSendAction(packet, callbacks, flush));
++            } else {
++                final java.util.List<PacketSendAction> actions = new java.util.ArrayList<>(1 + extraPackets.size());
++                actions.add(new PacketSendAction(packet, null, false)); // Delay the future listener until the end of the extra packets
++
++                for (int i = 0, len = extraPackets.size(); i < len;) {
++                    final Packet<?> extraPacket = extraPackets.get(i);
++                    final boolean end = ++i == len;
++                    actions.add(new PacketSendAction(extraPacket, end ? callbacks : null, end)); // Append listener to the end
++                }
++
++                this.pendingActions.addAll(actions);
++            }
+ 
++            this.flushQueue();
++            // Paper end - Optimize network
++        }
+     }
+ 
+     public void runOnceConnected(Consumer<Connection> task) {
+@@ -270,7 +419,7 @@
+             this.flushQueue();
+             task.accept(this);
+         } else {
+-            this.pendingActions.add(task);
++            this.pendingActions.add(new WrappedConsumer(task)); // Paper - Optimize network
+         }
+ 
+     }
+@@ -288,30 +437,51 @@
+     }
+ 
+     private void doSendPacket(Packet<?> packet, @Nullable PacketSendListener callbacks, boolean flush) {
+-        ChannelFuture channelFuture = flush ? this.channel.writeAndFlush(packet) : this.channel.write(packet);
++        // Paper start - Optimize network
++        final net.minecraft.server.level.ServerPlayer player = this.getPlayer();
++        if (!this.isConnected()) {
++            packet.onPacketDispatchFinish(player, null);
++            return;
++        }
++        try {
++        // Paper end - Optimize network
++        ChannelFuture channelfuture = flush ? this.channel.writeAndFlush(packet) : this.channel.write(packet);
++
+         if (callbacks != null) {
+-            channelFuture.addListener((future) -> {
++            channelfuture.addListener((future) -> {
+                 if (future.isSuccess()) {
+                     callbacks.onSuccess();
+                 } else {
+-                    Packet<?> packet = callbacks.onFailure();
+-                    if (packet != null) {
+-                        ChannelFuture channelFuture = this.channel.writeAndFlush(packet);
+-                        channelFuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
++                    Packet<?> packet1 = callbacks.onFailure();
++
++                    if (packet1 != null) {
++                        ChannelFuture channelfuture1 = this.channel.writeAndFlush(packet1);
++
++                        channelfuture1.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                     }
+                 }
+ 
+             });
+         }
+ 
+-        channelFuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
++        // Paper start - Optimize network
++        if (packet.hasFinishListener()) {
++            channelfuture.addListener((ChannelFutureListener) channelFuture -> packet.onPacketDispatchFinish(player, channelFuture));
++        }
++        channelfuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
++        } catch (final Exception e) {
++            LOGGER.error("NetworkException: {}", player, e);
++            this.disconnect(Component.translatable("disconnect.genericReason", "Internal Exception: " + e.getMessage()));
++            packet.onPacketDispatchFinish(player, null);
++        }
++        // Paper end - Optimize network
+     }
+ 
+     public void flushChannel() {
+         if (this.isConnected()) {
+             this.flush();
+         } else {
+-            this.pendingActions.add(Connection::flush);
++            this.pendingActions.add(new WrappedConsumer(Connection::flush)); // Paper - Optimize network
+         }
+ 
+     }
+@@ -328,38 +498,103 @@
+     }
+ 
+     private static AttributeKey<ConnectionProtocol.CodecData<?>> getProtocolKey(PacketFlow side) {
+-        AttributeKey var10000;
++        AttributeKey attributekey;
++
+         switch (side) {
+             case CLIENTBOUND:
+-                var10000 = ATTRIBUTE_CLIENTBOUND_PROTOCOL;
++                attributekey = Connection.ATTRIBUTE_CLIENTBOUND_PROTOCOL;
+                 break;
+             case SERVERBOUND:
+-                var10000 = ATTRIBUTE_SERVERBOUND_PROTOCOL;
++                attributekey = Connection.ATTRIBUTE_SERVERBOUND_PROTOCOL;
+                 break;
+             default:
+                 throw new IncompatibleClassChangeError();
+         }
+ 
+-        return var10000;
++        return attributekey;
+     }
+ 
+-    private void flushQueue() {
+-        if (this.channel != null && this.channel.isOpen()) {
+-            synchronized(this.pendingActions) {
+-                Consumer<Connection> consumer;
+-                while((consumer = this.pendingActions.poll()) != null) {
+-                    consumer.accept(this);
++    // Paper start - Optimize network: Rewrite this to be safer if ran off main thread
++    private boolean flushQueue() {
++        if (!this.isConnected()) {
++            return true;
++        }
++        if (io.papermc.paper.util.MCUtil.isMainThread()) {
++            return this.processQueue();
++        } else if (this.isPending) {
++            // Should only happen during login/status stages
++            synchronized (this.pendingActions) {
++                return this.processQueue();
++            }
++        }
++        return false;
++    }
++
++    private boolean processQueue() {
++        if (this.pendingActions.isEmpty()) {
++            return true;
++        }
++
++        // If we are on main, we are safe here in that nothing else should be processing queue off main anymore
++        // But if we are not on main due to login/status, the parent is synchronized on packetQueue
++        final java.util.Iterator<WrappedConsumer> iterator = this.pendingActions.iterator();
++        while (iterator.hasNext()) {
++            final WrappedConsumer queued = iterator.next(); // poll -> peek
++
++            // Fix NPE (Spigot bug caused by handleDisconnection())
++            if (queued == null) {
++                return true;
++            }
++
++            if (queued.isConsumed()) {
++                continue;
++            }
++
++            if (queued instanceof PacketSendAction packetSendAction) {
++                final Packet<?> packet = packetSendAction.packet;
++                if (!packet.isReady()) {
++                    return false;
+                 }
++            }
+ 
++            iterator.remove();
++            if (queued.tryMarkConsumed()) {
++                queued.accept(this);
+             }
+         }
++        return true;
+     }
++    // Paper end - Optimize network
+ 
++    private static final int MAX_PER_TICK = io.papermc.paper.configuration.GlobalConfiguration.get().misc.maxJoinsPerTick; // Paper
++    private static int joinAttemptsThisTick; // Paper
++    private static int currTick; // Paper
+     public void tick() {
+         this.flushQueue();
+-        PacketListener var2 = this.packetListener;
+-        if (var2 instanceof TickablePacketListener tickablePacketListener) {
+-            tickablePacketListener.tick();
++        // Paper start
++        if (Connection.currTick != net.minecraft.server.MinecraftServer.currentTick) {
++            Connection.currTick = net.minecraft.server.MinecraftServer.currentTick;
++            Connection.joinAttemptsThisTick = 0;
++        }
++        // Paper end
++        PacketListener packetlistener = this.packetListener;
++
++        if (packetlistener instanceof TickablePacketListener) {
++            TickablePacketListener tickablepacketlistener = (TickablePacketListener) packetlistener;
++
++            // Paper start - limit the number of joins which can be processed each tick
++            if (!(this.packetListener instanceof net.minecraft.server.network.ServerLoginPacketListenerImpl loginPacketListener)
++                || loginPacketListener.state != net.minecraft.server.network.ServerLoginPacketListenerImpl.State.VERIFYING
++                || Connection.joinAttemptsThisTick++ < MAX_PER_TICK) {
++            // Paper start - detailed watchdog information
++            net.minecraft.network.protocol.PacketUtils.packetProcessing.push(this.packetListener);
++            try { // Paper end - detailed watchdog information
++            tickablepacketlistener.tick();
++            } finally { // Paper start - detailed watchdog information
++                net.minecraft.network.protocol.PacketUtils.packetProcessing.pop();
++            } // Paper end - detailed watchdog information
++            }
++            // Paper end
+         }
+ 
+         if (!this.isConnected() && !this.disconnectionHandled) {
+@@ -367,7 +602,7 @@
+         }
+ 
+         if (this.channel != null) {
+-            this.channel.flush();
++            if (enableExplicitFlush) this.channel.eventLoop().execute(() -> this.channel.flush()); // Paper - we don't need to explicit flush here, but allow opt in incase issues are found to a better version
+         }
+ 
+         if (this.tickCount++ % 20 == 0) {
+@@ -381,8 +616,8 @@
+     }
+ 
+     protected void tickSecond() {
+-        this.averageSentPackets = Mth.lerp(0.75F, (float)this.sentPackets, this.averageSentPackets);
+-        this.averageReceivedPackets = Mth.lerp(0.75F, (float)this.receivedPackets, this.averageReceivedPackets);
++        this.averageSentPackets = Mth.lerp(0.75F, (float) this.sentPackets, this.averageSentPackets);
++        this.averageReceivedPackets = Mth.lerp(0.75F, (float) this.receivedPackets, this.averageReceivedPackets);
+         this.sentPackets = 0;
+         this.receivedPackets = 0;
+     }
+@@ -392,20 +627,20 @@
+     }
+ 
+     public String getLoggableAddress(boolean logIps) {
+-        if (this.address == null) {
+-            return "local";
+-        } else {
+-            return logIps ? this.address.toString() : "IP hidden";
+-        }
++        return this.address == null ? "local" : (logIps ? this.address.toString() : "IP hidden");
+     }
+ 
+     public void disconnect(Component disconnectReason) {
++        // Spigot Start
++        this.preparing = false;
++        this.clearPacketQueue(); // Paper - Optimize network
++        // Spigot End
+         if (this.channel == null) {
+             this.delayedDisconnect = disconnectReason;
+         }
+ 
+         if (this.isConnected()) {
+-            this.channel.close().awaitUninterruptibly();
++            this.channel.close(); // We can't wait as this may be called from an event loop.
+             this.disconnectedReason = disconnectReason;
+         }
+ 
+@@ -424,83 +659,109 @@
+     }
+ 
+     public static Connection connectToServer(InetSocketAddress address, boolean useEpoll, @Nullable SampleLogger packetSizeLog) {
+-        Connection connection = new Connection(PacketFlow.CLIENTBOUND);
++        Connection networkmanager = new Connection(PacketFlow.CLIENTBOUND);
++
+         if (packetSizeLog != null) {
+-            connection.setBandwidthLogger(packetSizeLog);
++            networkmanager.setBandwidthLogger(packetSizeLog);
+         }
+ 
+-        ChannelFuture channelFuture = connect(address, useEpoll, connection);
+-        channelFuture.syncUninterruptibly();
+-        return connection;
++        ChannelFuture channelfuture = Connection.connect(address, useEpoll, networkmanager);
++
++        channelfuture.syncUninterruptibly();
++        return networkmanager;
+     }
+ 
+     public static ChannelFuture connect(InetSocketAddress address, boolean useEpoll, final Connection connection) {
+-        Class<? extends SocketChannel> class_;
+-        EventLoopGroup eventLoopGroup;
++        Class oclass;
++        EventLoopGroup eventloopgroup;
++
+         if (Epoll.isAvailable() && useEpoll) {
+-            class_ = EpollSocketChannel.class;
+-            eventLoopGroup = NETWORK_EPOLL_WORKER_GROUP.get();
++            oclass = EpollSocketChannel.class;
++            eventloopgroup = (EventLoopGroup) Connection.NETWORK_EPOLL_WORKER_GROUP.get();
+         } else {
+-            class_ = NioSocketChannel.class;
+-            eventLoopGroup = NETWORK_WORKER_GROUP.get();
++            oclass = NioSocketChannel.class;
++            eventloopgroup = (EventLoopGroup) Connection.NETWORK_WORKER_GROUP.get();
+         }
+ 
+-        return (new Bootstrap()).group(eventLoopGroup).handler(new ChannelInitializer<Channel>() {
++        return ((Bootstrap) ((Bootstrap) ((Bootstrap) (new Bootstrap()).group(eventloopgroup)).handler(new ChannelInitializer<Channel>() {
+             protected void initChannel(Channel channel) {
+                 Connection.setInitialProtocolAttributes(channel);
+ 
+                 try {
+                     channel.config().setOption(ChannelOption.TCP_NODELAY, true);
+-                } catch (ChannelException var3) {
++                } catch (ChannelException channelexception) {
++                    ;
+                 }
+ 
+-                ChannelPipeline channelPipeline = channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30));
+-                Connection.configureSerialization(channelPipeline, PacketFlow.CLIENTBOUND, connection.bandwidthDebugMonitor);
+-                connection.configurePacketHandler(channelPipeline);
++                ChannelPipeline channelpipeline = channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30));
++
++                Connection.configureSerialization(channelpipeline, PacketFlow.CLIENTBOUND, connection.bandwidthDebugMonitor);
++                connection.configurePacketHandler(channelpipeline);
+             }
+-        }).channel(class_).connect(address.getAddress(), address.getPort());
++        })).channel(oclass)).connect(address.getAddress(), address.getPort());
+     }
+ 
+     public static void configureSerialization(ChannelPipeline pipeline, PacketFlow side, @Nullable BandwidthDebugMonitor packetSizeLogger) {
+-        PacketFlow packetFlow = side.getOpposite();
+-        AttributeKey<ConnectionProtocol.CodecData<?>> attributeKey = getProtocolKey(side);
+-        AttributeKey<ConnectionProtocol.CodecData<?>> attributeKey2 = getProtocolKey(packetFlow);
+-        pipeline.addLast("splitter", new Varint21FrameDecoder(packetSizeLogger)).addLast("decoder", new PacketDecoder(attributeKey)).addLast("prepender", new Varint21LengthFieldPrepender()).addLast("encoder", new PacketEncoder(attributeKey2)).addLast("unbundler", new PacketBundleUnpacker(attributeKey2)).addLast("bundler", new PacketBundlePacker(attributeKey));
++        PacketFlow enumprotocoldirection1 = side.getOpposite();
++        AttributeKey<ConnectionProtocol.CodecData<?>> attributekey = Connection.getProtocolKey(side);
++        AttributeKey<ConnectionProtocol.CodecData<?>> attributekey1 = Connection.getProtocolKey(enumprotocoldirection1);
++
++        pipeline.addLast("splitter", new Varint21FrameDecoder(packetSizeLogger)).addLast("decoder", new PacketDecoder(attributekey)).addLast("prepender", new Varint21LengthFieldPrepender()).addLast("encoder", new PacketEncoder(attributekey1)).addLast("unbundler", new PacketBundleUnpacker(attributekey1)).addLast("bundler", new PacketBundlePacker(attributekey));
+     }
+ 
+     public void configurePacketHandler(ChannelPipeline pipeline) {
+-        pipeline.addLast(new FlowControlHandler()).addLast("packet_handler", this);
++        pipeline.addLast(new ChannelHandler[]{new FlowControlHandler()}).addLast("packet_handler", this);
+     }
+ 
+     private static void configureInMemoryPacketValidation(ChannelPipeline pipeline, PacketFlow side) {
+-        PacketFlow packetFlow = side.getOpposite();
+-        AttributeKey<ConnectionProtocol.CodecData<?>> attributeKey = getProtocolKey(side);
+-        AttributeKey<ConnectionProtocol.CodecData<?>> attributeKey2 = getProtocolKey(packetFlow);
+-        pipeline.addLast("validator", new PacketFlowValidator(attributeKey, attributeKey2));
++        PacketFlow enumprotocoldirection1 = side.getOpposite();
++        AttributeKey<ConnectionProtocol.CodecData<?>> attributekey = Connection.getProtocolKey(side);
++        AttributeKey<ConnectionProtocol.CodecData<?>> attributekey1 = Connection.getProtocolKey(enumprotocoldirection1);
++
++        pipeline.addLast("validator", new PacketFlowValidator(attributekey, attributekey1));
+     }
+ 
+     public static void configureInMemoryPipeline(ChannelPipeline pipeline, PacketFlow side) {
+-        configureInMemoryPacketValidation(pipeline, side);
++        Connection.configureInMemoryPacketValidation(pipeline, side);
+     }
+ 
+     public static Connection connectToLocalServer(SocketAddress address) {
+-        final Connection connection = new Connection(PacketFlow.CLIENTBOUND);
+-        (new Bootstrap()).group(LOCAL_WORKER_GROUP.get()).handler(new ChannelInitializer<Channel>() {
++        final Connection networkmanager = new Connection(PacketFlow.CLIENTBOUND);
++
++        ((Bootstrap) ((Bootstrap) ((Bootstrap) (new Bootstrap()).group((EventLoopGroup) Connection.LOCAL_WORKER_GROUP.get())).handler(new ChannelInitializer<Channel>() {
+             protected void initChannel(Channel channel) {
+                 Connection.setInitialProtocolAttributes(channel);
+-                ChannelPipeline channelPipeline = channel.pipeline();
+-                Connection.configureInMemoryPipeline(channelPipeline, PacketFlow.CLIENTBOUND);
+-                connection.configurePacketHandler(channelPipeline);
++                ChannelPipeline channelpipeline = channel.pipeline();
++
++                Connection.configureInMemoryPipeline(channelpipeline, PacketFlow.CLIENTBOUND);
++                networkmanager.configurePacketHandler(channelpipeline);
+             }
+-        }).channel(LocalChannel.class).connect(address).syncUninterruptibly();
+-        return connection;
++        })).channel(LocalChannel.class)).connect(address).syncUninterruptibly();
++        return networkmanager;
+     }
+ 
+-    public void setEncryptionKey(Cipher decryptionCipher, Cipher encryptionCipher) {
+-        this.encrypted = true;
+-        this.channel.pipeline().addBefore("splitter", "decrypt", new CipherDecoder(decryptionCipher));
+-        this.channel.pipeline().addBefore("prepender", "encrypt", new CipherEncoder(encryptionCipher));
++    // Paper start
++//    public void setEncryptionKey(Cipher decryptionCipher, Cipher encryptionCipher) {
++//        this.encrypted = true;
++//        this.channel.pipeline().addBefore("splitter", "decrypt", new CipherDecoder(decryptionCipher));
++//        this.channel.pipeline().addBefore("prepender", "encrypt", new CipherEncoder(encryptionCipher));
++//    }
++
++    public void setupEncryption(javax.crypto.SecretKey key) throws net.minecraft.util.CryptException {
++        if (!this.encrypted) {
++            try {
++                com.velocitypowered.natives.encryption.VelocityCipher decryption = com.velocitypowered.natives.util.Natives.cipher.get().forDecryption(key);
++                com.velocitypowered.natives.encryption.VelocityCipher encryption = com.velocitypowered.natives.util.Natives.cipher.get().forEncryption(key);
++
++                this.encrypted = true;
++                this.channel.pipeline().addBefore("splitter", "decrypt", new CipherDecoder(decryption));
++                this.channel.pipeline().addBefore("prepender", "encrypt", new CipherEncoder(encryption));
++            } catch (java.security.GeneralSecurityException e) {
++                throw new net.minecraft.util.CryptException(e);
++            }
++        }
+     }
++    // Paper end
+ 
+     public boolean isEncrypted() {
+         return this.encrypted;
+@@ -533,17 +794,19 @@
+ 
+     public void setupCompression(int compressionThreshold, boolean rejectsBadPackets) {
+         if (compressionThreshold >= 0) {
++            com.velocitypowered.natives.compression.VelocityCompressor compressor = com.velocitypowered.natives.util.Natives.compress.get().create(io.papermc.paper.configuration.GlobalConfiguration.get().misc.compressionLevel.or(-1)); // Paper
+             if (this.channel.pipeline().get("decompress") instanceof CompressionDecoder) {
+-                ((CompressionDecoder)this.channel.pipeline().get("decompress")).setThreshold(compressionThreshold, rejectsBadPackets);
++                ((CompressionDecoder) this.channel.pipeline().get("decompress")).setThreshold(compressionThreshold, rejectsBadPackets);
+             } else {
+-                this.channel.pipeline().addBefore("decoder", "decompress", new CompressionDecoder(compressionThreshold, rejectsBadPackets));
++                this.channel.pipeline().addBefore("decoder", "decompress", new CompressionDecoder(compressor, compressionThreshold, rejectsBadPackets)); // Paper
+             }
+ 
+             if (this.channel.pipeline().get("compress") instanceof CompressionEncoder) {
+-                ((CompressionEncoder)this.channel.pipeline().get("compress")).setThreshold(compressionThreshold);
++                ((CompressionEncoder) this.channel.pipeline().get("compress")).setThreshold(compressionThreshold);
+             } else {
+-                this.channel.pipeline().addBefore("encoder", "compress", new CompressionEncoder(compressionThreshold));
++                this.channel.pipeline().addBefore("encoder", "compress", new CompressionEncoder(compressor, compressionThreshold)); // Paper
+             }
++            this.channel.pipeline().fireUserEventTriggered(io.papermc.paper.network.ConnectionEvent.COMPRESSION_THRESHOLD_SET); // Paper
+         } else {
+             if (this.channel.pipeline().get("decompress") instanceof CompressionDecoder) {
+                 this.channel.pipeline().remove("decompress");
+@@ -552,6 +815,7 @@
+             if (this.channel.pipeline().get("compress") instanceof CompressionEncoder) {
+                 this.channel.pipeline().remove("compress");
+             }
++            this.channel.pipeline().fireUserEventTriggered(io.papermc.paper.network.ConnectionEvent.COMPRESSION_DISABLED); // Paper
+         }
+ 
+     }
+@@ -559,17 +823,40 @@
+     public void handleDisconnection() {
+         if (this.channel != null && !this.channel.isOpen()) {
+             if (this.disconnectionHandled) {
+-                LOGGER.warn("handleDisconnection() called twice");
++                // Connection.LOGGER.warn("handleDisconnection() called twice"); // Paper - Don't log useless message
+             } else {
+                 this.disconnectionHandled = true;
+-                PacketListener packetListener = this.getPacketListener();
+-                PacketListener packetListener2 = packetListener != null ? packetListener : this.disconnectListener;
+-                if (packetListener2 != null) {
+-                    Component component = Objects.requireNonNullElseGet(this.getDisconnectedReason(), () -> {
++                PacketListener packetlistener = this.getPacketListener();
++                PacketListener packetlistener1 = packetlistener != null ? packetlistener : this.disconnectListener;
++
++                if (packetlistener1 != null) {
++                    Component ichatbasecomponent = (Component) Objects.requireNonNullElseGet(this.getDisconnectedReason(), () -> {
+                         return Component.translatable("multiplayer.disconnect.generic");
+                     });
+-                    packetListener2.onDisconnect(component);
++
++                    packetlistener1.onDisconnect(ichatbasecomponent);
++                }
++                this.clearPacketQueue(); // Paper - Optimize network
++                // Paper start - Add PlayerConnectionCloseEvent
++                final PacketListener packetListener = this.getPacketListener();
++                if (packetListener instanceof net.minecraft.server.network.ServerCommonPacketListenerImpl commonPacketListener) {
++                    /* Player was logged in, either game listener or configuration listener */
++                    final com.mojang.authlib.GameProfile profile = commonPacketListener.getOwner();
++                    new com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent(profile.getId(),
++                        profile.getName(), ((java.net.InetSocketAddress)address).getAddress(), false).callEvent();
++                } else if (packetListener instanceof net.minecraft.server.network.ServerLoginPacketListenerImpl loginListener) {
++                    /* Player is login stage */
++                    switch (loginListener.state) {
++                        case VERIFYING:
++                        case WAITING_FOR_DUPE_DISCONNECT:
++                        case PROTOCOL_SWITCHING:
++                        case ACCEPTED:
++                            final com.mojang.authlib.GameProfile profile = loginListener.authenticatedProfile; /* Should be non-null at this stage */
++                            new com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent(profile.getId(), profile.getName(),
++                                ((java.net.InetSocketAddress)address).getAddress(), false).callEvent();
++                    }
+                 }
++                // Paper end
+ 
+             }
+         }
+@@ -586,4 +873,89 @@
+     public void setBandwidthLogger(SampleLogger log) {
+         this.bandwidthDebugMonitor = new BandwidthDebugMonitor(log);
+     }
++
++    // Paper start - Optimize network
++    public void clearPacketQueue() {
++        final net.minecraft.server.level.ServerPlayer player = getPlayer();
++        for (final Consumer<Connection> queuedAction : this.pendingActions) {
++            if (queuedAction instanceof PacketSendAction packetSendAction) {
++                final Packet<?> packet = packetSendAction.packet;
++                if (packet.hasFinishListener()) {
++                    packet.onPacketDispatchFinish(player, null);
++                }
++            }
++        }
++        this.pendingActions.clear();
++    }
++
++    private static class InnerUtil { // Attempt to hide these methods from ProtocolLib, so it doesn't accidently pick them up.
++
++        @Nullable
++        private static java.util.List<Packet<?>> buildExtraPackets(final Packet<?> packet) {
++            final java.util.List<Packet<?>> extra = packet.getExtraPackets();
++            if (extra == null || extra.isEmpty()) {
++                return null;
++            }
++
++            final java.util.List<Packet<?>> ret = new java.util.ArrayList<>(1 + extra.size());
++            buildExtraPackets0(extra, ret);
++            return ret;
++        }
++
++        private static void buildExtraPackets0(final java.util.List<Packet<?>> extraPackets, final java.util.List<Packet<?>> into) {
++            for (final Packet<?> extra : extraPackets) {
++                into.add(extra);
++                final java.util.List<Packet<?>> extraExtra = extra.getExtraPackets();
++                if (extraExtra != null && !extraExtra.isEmpty()) {
++                    buildExtraPackets0(extraExtra, into);
++                }
++            }
++        }
++
++        private static boolean canSendImmediate(final Connection networkManager, final net.minecraft.network.protocol.Packet<?> packet) {
++            return networkManager.isPending || networkManager.packetListener.protocol() != ConnectionProtocol.PLAY ||
++                packet instanceof net.minecraft.network.protocol.common.ClientboundKeepAlivePacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundPlayerChatPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundClearTitlesPacket ||
++                packet instanceof net.minecraft.network.protocol.game.ClientboundBossEventPacket;
++        }
++    }
++
++    private static class WrappedConsumer implements Consumer<Connection> {
++        private final Consumer<Connection> delegate;
++        private final java.util.concurrent.atomic.AtomicBoolean consumed = new java.util.concurrent.atomic.AtomicBoolean(false);
++
++        private WrappedConsumer(final Consumer<Connection> delegate) {
++            this.delegate = delegate;
++        }
++
++        @Override
++        public void accept(final Connection connection) {
++            this.delegate.accept(connection);
++        }
++
++        public boolean tryMarkConsumed() {
++            return consumed.compareAndSet(false, true);
++        }
++
++        public boolean isConsumed() {
++            return consumed.get();
++        }
++    }
++
++    private static final class PacketSendAction extends WrappedConsumer {
++        private final Packet<?> packet;
++
++        private PacketSendAction(final Packet<?> packet, @Nullable final PacketSendListener packetSendListener, final boolean flush) {
++            super(connection -> connection.sendPacket(packet, packetSendListener, flush));
++            this.packet = packet;
++        }
++    }
++    // Paper end - Optimize network
+ }

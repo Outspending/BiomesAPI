@@ -1,0 +1,105 @@
+--- a/net/minecraft/world/level/block/PressurePlateBlock.java
++++ b/net/minecraft/world/level/block/PressurePlateBlock.java
+@@ -3,6 +3,7 @@
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.state.BlockBehaviour;
+ import net.minecraft.world.level.block.state.BlockState;
+@@ -10,52 +11,83 @@
+ import net.minecraft.world.level.block.state.properties.BlockSetType;
+ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+ import net.minecraft.world.level.block.state.properties.BooleanProperty;
++import org.bukkit.event.entity.EntityInteractEvent;
++// CraftBukkit end
+ 
+ public class PressurePlateBlock extends BasePressurePlateBlock {
++
+     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+     private final PressurePlateBlock.Sensitivity sensitivity;
+ 
+     protected PressurePlateBlock(PressurePlateBlock.Sensitivity type, BlockBehaviour.Properties settings, BlockSetType blockSetType) {
+         super(settings, blockSetType);
+-        this.registerDefaultState(this.stateDefinition.any().setValue(POWERED, Boolean.valueOf(false)));
++        this.registerDefaultState((BlockState) ((BlockState) this.stateDefinition.any()).setValue(PressurePlateBlock.POWERED, false));
+         this.sensitivity = type;
+     }
+ 
+     @Override
+     protected int getSignalForState(BlockState state) {
+-        return state.getValue(POWERED) ? 15 : 0;
++        return (Boolean) state.getValue(PressurePlateBlock.POWERED) ? 15 : 0;
+     }
+ 
+     @Override
+     protected BlockState setSignalForState(BlockState state, int rsOut) {
+-        return state.setValue(POWERED, Boolean.valueOf(rsOut > 0));
++        return (BlockState) state.setValue(PressurePlateBlock.POWERED, rsOut > 0);
+     }
+ 
+     @Override
+     protected int getSignalStrength(Level world, BlockPos pos) {
+-        Class<Entity> var10000;
++        Class<? extends Entity> oclass; // CraftBukkit
++
+         switch (this.sensitivity) {
+             case EVERYTHING:
+-                var10000 = Entity.class;
++                oclass = Entity.class;
+                 break;
+             case MOBS:
+-                var10000 = LivingEntity.class;
++                oclass = LivingEntity.class;
+                 break;
+             default:
+                 throw new IncompatibleClassChangeError();
+         }
+ 
+-        Class class_ = var10000;
+-        return getEntityCount(world, TOUCH_AABB.move(pos), class_) > 0 ? 15 : 0;
++        Class oclass1 = oclass;
++
++        // CraftBukkit start - Call interact event when turning on a pressure plate
++        for (Entity entity : getEntities(world, PressurePlateBlock.TOUCH_AABB.move(pos), oclass)) {
++            if (this.getSignalForState(world.getBlockState(pos)) == 0) {
++                org.bukkit.World bworld = world.getWorld();
++                org.bukkit.plugin.PluginManager manager = world.getCraftServer().getPluginManager();
++                org.bukkit.event.Cancellable cancellable;
++
++                if (entity instanceof Player) {
++                    cancellable = org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.callPlayerInteractEvent((Player) entity, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null);
++                } else {
++                    cancellable = new EntityInteractEvent(entity.getBukkitEntity(), bworld.getBlockAt(pos.getX(), pos.getY(), pos.getZ()));
++                    manager.callEvent((EntityInteractEvent) cancellable);
++                }
++
++                // We only want to block turning the plate on if all events are cancelled
++                if (cancellable.isCancelled()) {
++                    continue;
++                }
++            }
++
++            return 15;
++        }
++
++        return 0;
++        // CraftBukkit end
+     }
+ 
+     @Override
+     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+-        builder.add(POWERED);
++        builder.add(PressurePlateBlock.POWERED);
+     }
+ 
+     public static enum Sensitivity {
+-        EVERYTHING,
+-        MOBS;
++
++        EVERYTHING, MOBS;
++
++        private Sensitivity() {}
+     }
+ }

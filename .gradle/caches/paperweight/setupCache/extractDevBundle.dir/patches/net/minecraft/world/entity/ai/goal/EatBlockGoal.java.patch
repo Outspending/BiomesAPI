@@ -1,0 +1,79 @@
+--- a/net/minecraft/world/entity/ai/goal/EatBlockGoal.java
++++ b/net/minecraft/world/entity/ai/goal/EatBlockGoal.java
+@@ -11,7 +11,12 @@
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.state.predicate.BlockStatePredicate;
+ 
++// CraftBukkit start
++import org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory;
++// CraftBukkit end
++
+ public class EatBlockGoal extends Goal {
++
+     private static final int EAT_ANIMATION_TICKS = 40;
+     private static final Predicate<BlockState> IS_TALL_GRASS = BlockStatePredicate.forBlock(Blocks.GRASS);
+     private final Mob mob;
+@@ -26,22 +31,24 @@
+ 
+     @Override
+     public boolean canUse() {
++        // Paper start - Fix MC-210802
++        if (!((net.minecraft.server.level.ServerLevel) this.level).chunkSource.chunkMap.anyPlayerCloseEnoughForSpawning(this.mob.chunkPosition())) {
++            return false;
++        }
++        // Paper end
+         if (this.mob.getRandom().nextInt(this.mob.isBaby() ? 50 : 1000) != 0) {
+             return false;
+         } else {
+-            BlockPos blockPos = this.mob.blockPosition();
+-            if (IS_TALL_GRASS.test(this.level.getBlockState(blockPos))) {
+-                return true;
+-            } else {
+-                return this.level.getBlockState(blockPos.below()).is(Blocks.GRASS_BLOCK);
+-            }
++            BlockPos blockposition = this.mob.blockPosition();
++
++            return EatBlockGoal.IS_TALL_GRASS.test(this.level.getBlockState(blockposition)) ? true : this.level.getBlockState(blockposition.below()).is(Blocks.GRASS_BLOCK);
+         }
+     }
+ 
+     @Override
+     public void start() {
+         this.eatAnimationTick = this.adjustedTickDelay(40);
+-        this.level.broadcastEntityEvent(this.mob, (byte)10);
++        this.level.broadcastEntityEvent(this.mob, (byte) 10);
+         this.mob.getNavigation().stop();
+     }
+ 
+@@ -63,19 +70,22 @@
+     public void tick() {
+         this.eatAnimationTick = Math.max(0, this.eatAnimationTick - 1);
+         if (this.eatAnimationTick == this.adjustedTickDelay(4)) {
+-            BlockPos blockPos = this.mob.blockPosition();
+-            if (IS_TALL_GRASS.test(this.level.getBlockState(blockPos))) {
+-                if (this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
+-                    this.level.destroyBlock(blockPos, false);
++            BlockPos blockposition = this.mob.blockPosition();
++
++            final BlockState blockState = this.level.getBlockState(blockposition); // Paper - fix wrong block state
++            if (EatBlockGoal.IS_TALL_GRASS.test(blockState)) { // Paper - fix wrong block state
++                if (CraftEventFactory.callEntityChangeBlockEvent(this.mob, blockposition, blockState.getFluidState().createLegacyBlock(), !this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING))) { // CraftBukkit // Paper - fix wrong block state
++                    this.level.destroyBlock(blockposition, false);
+                 }
+ 
+                 this.mob.ate();
+             } else {
+-                BlockPos blockPos2 = blockPos.below();
+-                if (this.level.getBlockState(blockPos2).is(Blocks.GRASS_BLOCK)) {
+-                    if (this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
+-                        this.level.levelEvent(2001, blockPos2, Block.getId(Blocks.GRASS_BLOCK.defaultBlockState()));
+-                        this.level.setBlock(blockPos2, Blocks.DIRT.defaultBlockState(), 2);
++                BlockPos blockposition1 = blockposition.below();
++
++                if (this.level.getBlockState(blockposition1).is(Blocks.GRASS_BLOCK)) {
++                    if (CraftEventFactory.callEntityChangeBlockEvent(this.mob, blockposition1, Blocks.DIRT.defaultBlockState(), !this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING))) { // CraftBukkit // Paper - Fix wrong block state
++                        this.level.levelEvent(2001, blockposition1, Block.getId(Blocks.GRASS_BLOCK.defaultBlockState()));
++                        this.level.setBlock(blockposition1, Blocks.DIRT.defaultBlockState(), 2);
+                     }
+ 
+                     this.mob.ate();

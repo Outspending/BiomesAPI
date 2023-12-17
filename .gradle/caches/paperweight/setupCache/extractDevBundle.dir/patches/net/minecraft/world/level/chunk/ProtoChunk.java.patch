@@ -1,0 +1,48 @@
+--- a/net/minecraft/world/level/chunk/ProtoChunk.java
++++ b/net/minecraft/world/level/chunk/ProtoChunk.java
+@@ -72,16 +72,32 @@
+         return new ChunkAccess.TicksToSave(this.blockTicks, this.fluidTicks);
+     }
+ 
++    // Paper start - If loaded util
++    @Override
++    public final FluidState getFluidIfLoaded(BlockPos blockposition) {
++        return this.getFluidState(blockposition);
++    }
++
++    @Override
++    public final BlockState getBlockStateIfLoaded(BlockPos blockposition) {
++        return this.getBlockState(blockposition);
++    }
++    // Paper end
++
+     @Override
+     public BlockState getBlockState(BlockPos pos) {
+-        int i = pos.getY();
+-        if (this.isOutsideBuildHeight(i)) {
++        // Paper start
++        return getBlockState(pos.getX(), pos.getY(), pos.getZ());
++    }
++    public BlockState getBlockState(final int x, final int y, final int z) {
++        if (this.isOutsideBuildHeight(y)) {
+             return Blocks.VOID_AIR.defaultBlockState();
+         } else {
+-            LevelChunkSection levelChunkSection = this.getSection(this.getSectionIndex(i));
+-            return levelChunkSection.hasOnlyAir() ? Blocks.AIR.defaultBlockState() : levelChunkSection.getBlockState(pos.getX() & 15, i & 15, pos.getZ() & 15);
++            LevelChunkSection levelChunkSection = this.getSections()[this.getSectionIndex(y)];
++            return levelChunkSection.hasOnlyAir() ? Blocks.AIR.defaultBlockState() : levelChunkSection.getBlockState(x & 15, y & 15, z & 15);
+         }
+     }
++    // Paper end
+ 
+     @Override
+     public FluidState getFluidState(BlockPos pos) {
+@@ -118,7 +134,7 @@
+                     }
+ 
+                     if (LightEngine.hasDifferentLightProperties(this, pos, blockState, state)) {
+-                        this.skyLightSources.update(this, m, j, o);
++                        // Paper - starlight - remove skyLightSources
+                         this.lightEngine.checkBlock(pos);
+                     }
+                 }

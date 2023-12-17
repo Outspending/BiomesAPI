@@ -1,0 +1,168 @@
+--- a/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java
++++ b/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java
+@@ -11,42 +11,90 @@
+ import net.minecraft.world.ContainerHelper;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.ChiseledBookShelfBlock;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.state.properties.BooleanProperty;
+ import net.minecraft.world.level.gameevent.GameEvent;
+ import org.slf4j.Logger;
+ 
++// CraftBukkit start
++import java.util.List;
++import org.bukkit.Location;
++import org.bukkit.craftbukkit.v1_20_R2.entity.CraftHumanEntity;
++import org.bukkit.entity.HumanEntity;
++// CraftBukkit end
++
+ public class ChiseledBookShelfBlockEntity extends BlockEntity implements Container {
++
+     public static final int MAX_BOOKS_IN_STORAGE = 6;
+     private static final Logger LOGGER = LogUtils.getLogger();
+-    private final NonNullList<ItemStack> items = NonNullList.withSize(6, ItemStack.EMPTY);
+-    public int lastInteractedSlot = -1;
++    private final NonNullList<ItemStack> items;
++    public int lastInteractedSlot;
++    // CraftBukkit start - add fields and methods
++    public List<HumanEntity> transaction = new java.util.ArrayList<>();
++    private int maxStack = 1;
++
++    @Override
++    public List<ItemStack> getContents() {
++        return this.items;
++    }
++
++    @Override
++    public void onOpen(CraftHumanEntity who) {
++        this.transaction.add(who);
++    }
++
++    @Override
++    public void onClose(CraftHumanEntity who) {
++        this.transaction.remove(who);
++    }
++
++    @Override
++    public List<HumanEntity> getViewers() {
++        return this.transaction;
++    }
++
++    @Override
++    public void setMaxStackSize(int size) {
++        this.maxStack = size;
++    }
++
++    @Override
++    public Location getLocation() {
++        if (this.level == null) return null;
++        return new org.bukkit.Location(this.level.getWorld(), this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ());
++    }
++    // CraftBukkit end
+ 
+     public ChiseledBookShelfBlockEntity(BlockPos pos, BlockState state) {
+         super(BlockEntityType.CHISELED_BOOKSHELF, pos, state);
++        this.items = NonNullList.withSize(6, ItemStack.EMPTY);
++        this.lastInteractedSlot = -1;
+     }
+ 
+     private void updateState(int interactedSlot) {
+         if (interactedSlot >= 0 && interactedSlot < 6) {
+             this.lastInteractedSlot = interactedSlot;
+-            BlockState blockState = this.getBlockState();
++            BlockState iblockdata = this.getBlockState();
+ 
+-            for(int i = 0; i < ChiseledBookShelfBlock.SLOT_OCCUPIED_PROPERTIES.size(); ++i) {
+-                boolean bl = !this.getItem(i).isEmpty();
+-                BooleanProperty booleanProperty = ChiseledBookShelfBlock.SLOT_OCCUPIED_PROPERTIES.get(i);
+-                blockState = blockState.setValue(booleanProperty, Boolean.valueOf(bl));
++            for (int j = 0; j < ChiseledBookShelfBlock.SLOT_OCCUPIED_PROPERTIES.size(); ++j) {
++                boolean flag = !this.getItem(j).isEmpty();
++                BooleanProperty blockstateboolean = (BooleanProperty) ChiseledBookShelfBlock.SLOT_OCCUPIED_PROPERTIES.get(j);
++
++                iblockdata = (BlockState) iblockdata.setValue(blockstateboolean, flag);
+             }
+ 
+-            Objects.requireNonNull(this.level).setBlock(this.worldPosition, blockState, 3);
+-            this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.worldPosition, GameEvent.Context.of(blockState));
++            ((Level) Objects.requireNonNull(this.level)).setBlock(this.worldPosition, iblockdata, 3);
++            this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.worldPosition, GameEvent.Context.of(iblockdata));
+         } else {
+-            LOGGER.error("Expected slot 0-5, got {}", (int)interactedSlot);
++            ChiseledBookShelfBlockEntity.LOGGER.error("Expected slot 0-5, got {}", interactedSlot);
+         }
+     }
+ 
+     @Override
+     public void load(CompoundTag nbt) {
++        super.load(nbt); // CraftBukkit - SPIGOT-7393: Load super Bukkit data
+         this.items.clear();
+         ContainerHelper.loadAllItems(nbt, this.items);
+         this.lastInteractedSlot = nbt.getInt("last_interacted_slot");
+@@ -59,7 +107,7 @@
+     }
+ 
+     public int count() {
+-        return (int)this.items.stream().filter(Predicate.not(ItemStack::isEmpty)).count();
++        return (int) this.items.stream().filter(Predicate.not(ItemStack::isEmpty)).count();
+     }
+ 
+     @Override
+@@ -79,18 +127,19 @@
+ 
+     @Override
+     public ItemStack getItem(int slot) {
+-        return this.items.get(slot);
++        return (ItemStack) this.items.get(slot);
+     }
+ 
+     @Override
+     public ItemStack removeItem(int slot, int amount) {
+-        ItemStack itemStack = Objects.requireNonNullElse(this.items.get(slot), ItemStack.EMPTY);
++        ItemStack itemstack = (ItemStack) Objects.requireNonNullElse((ItemStack) this.items.get(slot), ItemStack.EMPTY);
++
+         this.items.set(slot, ItemStack.EMPTY);
+-        if (!itemStack.isEmpty()) {
+-            this.updateState(slot);
++        if (!itemstack.isEmpty()) {
++            if (this.level != null) this.updateState(slot); // CraftBukkit - SPIGOT-7381: check for null world
+         }
+ 
+-        return itemStack;
++        return itemstack;
+     }
+ 
+     @Override
+@@ -102,7 +151,7 @@
+     public void setItem(int slot, ItemStack stack) {
+         if (stack.is(ItemTags.BOOKSHELF_BOOKS)) {
+             this.items.set(slot, stack);
+-            this.updateState(slot);
++            if (this.level != null) this.updateState(slot); // CraftBukkit - SPIGOT-7381: check for null world
+         } else if (stack.isEmpty()) {
+             this.removeItem(slot, 1);
+         }
+@@ -111,18 +160,14 @@
+ 
+     @Override
+     public boolean canTakeItem(Container hopperInventory, int slot, ItemStack stack) {
+-        return hopperInventory.hasAnyMatching((itemStack2) -> {
+-            if (itemStack2.isEmpty()) {
+-                return true;
+-            } else {
+-                return ItemStack.isSameItemSameTags(stack, itemStack2) && itemStack2.getCount() + stack.getCount() <= Math.min(itemStack2.getMaxStackSize(), hopperInventory.getMaxStackSize());
+-            }
++        return hopperInventory.hasAnyMatching((itemstack1) -> {
++            return itemstack1.isEmpty() ? true : ItemStack.isSameItemSameTags(stack, itemstack1) && itemstack1.getCount() + stack.getCount() <= Math.min(itemstack1.getMaxStackSize(), hopperInventory.getMaxStackSize());
+         });
+     }
+ 
+     @Override
+     public int getMaxStackSize() {
+-        return 1;
++        return this.maxStack; // CraftBukkit
+     }
+ 
+     @Override

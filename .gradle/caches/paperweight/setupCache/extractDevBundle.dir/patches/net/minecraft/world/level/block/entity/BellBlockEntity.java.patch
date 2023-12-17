@@ -1,0 +1,198 @@
+--- a/net/minecraft/world/level/block/entity/BellBlockEntity.java
++++ b/net/minecraft/world/level/block/entity/BellBlockEntity.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.level.block.entity;
+ 
++import java.util.Iterator;
+ import java.util.List;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+@@ -20,6 +21,7 @@
+ import org.apache.commons.lang3.mutable.MutableInt;
+ 
+ public class BellBlockEntity extends BlockEntity {
++
+     private static final int DURATION = 50;
+     private static final int GLOW_DURATION = 60;
+     private static final int MIN_TICKS_BETWEEN_SEARCHES = 60;
+@@ -61,12 +63,17 @@
+ 
+         if (blockEntity.ticks >= 50) {
+             blockEntity.shaking = false;
++            // Paper start
++            if (!blockEntity.resonating) {
++                blockEntity.nearbyEntities.clear();
++            }
++            // Paper end
+             blockEntity.ticks = 0;
+         }
+ 
+-        if (blockEntity.ticks >= 5 && blockEntity.resonationTicks == 0 && areRaidersNearby(pos, blockEntity.nearbyEntities)) {
++        if (blockEntity.ticks >= 5 && blockEntity.resonationTicks == 0 && BellBlockEntity.areRaidersNearby(pos, blockEntity.nearbyEntities)) {
+             blockEntity.resonating = true;
+-            world.playSound((Player)null, pos, SoundEvents.BELL_RESONATE, SoundSource.BLOCKS, 1.0F, 1.0F);
++            world.playSound((Player) null, pos, SoundEvents.BELL_RESONATE, SoundSource.BLOCKS, 1.0F, 1.0F);
+         }
+ 
+         if (blockEntity.resonating) {
+@@ -74,6 +81,7 @@
+                 ++blockEntity.resonationTicks;
+             } else {
+                 bellEffect.run(world, pos, blockEntity.nearbyEntities);
++                blockEntity.nearbyEntities.clear(); // Paper
+                 blockEntity.resonating = false;
+             }
+         }
+@@ -81,15 +89,16 @@
+     }
+ 
+     public static void clientTick(Level world, BlockPos pos, BlockState state, BellBlockEntity blockEntity) {
+-        tick(world, pos, state, blockEntity, BellBlockEntity::showBellParticles);
++        BellBlockEntity.tick(world, pos, state, blockEntity, BellBlockEntity::showBellParticles);
+     }
+ 
+     public static void serverTick(Level world, BlockPos pos, BlockState state, BellBlockEntity blockEntity) {
+-        tick(world, pos, state, blockEntity, BellBlockEntity::makeRaidersGlow);
++        BellBlockEntity.tick(world, pos, state, blockEntity, BellBlockEntity::makeRaidersGlow);
+     }
+ 
+     public void onHit(Direction direction) {
+-        BlockPos blockPos = this.getBlockPos();
++        BlockPos blockposition = this.getBlockPos();
++
+         this.clickDirection = direction;
+         if (this.shaking) {
+             this.ticks = 0;
+@@ -97,63 +106,82 @@
+             this.shaking = true;
+         }
+ 
+-        this.level.blockEvent(blockPos, this.getBlockState().getBlock(), 1, direction.get3DDataValue());
++        this.level.blockEvent(blockposition, this.getBlockState().getBlock(), 1, direction.get3DDataValue());
+     }
+ 
+     private void updateEntities() {
+-        BlockPos blockPos = this.getBlockPos();
++        BlockPos blockposition = this.getBlockPos();
++
+         if (this.level.getGameTime() > this.lastRingTimestamp + 60L || this.nearbyEntities == null) {
+             this.lastRingTimestamp = this.level.getGameTime();
+-            AABB aABB = (new AABB(blockPos)).inflate(48.0D);
+-            this.nearbyEntities = this.level.getEntitiesOfClass(LivingEntity.class, aABB);
++            AABB axisalignedbb = (new AABB(blockposition)).inflate(48.0D);
++
++            this.nearbyEntities = this.level.getEntitiesOfClass(LivingEntity.class, axisalignedbb);
+         }
+ 
+         if (!this.level.isClientSide) {
+-            for(LivingEntity livingEntity : this.nearbyEntities) {
+-                if (livingEntity.isAlive() && !livingEntity.isRemoved() && blockPos.closerToCenterThan(livingEntity.position(), 32.0D)) {
+-                    livingEntity.getBrain().setMemory(MemoryModuleType.HEARD_BELL_TIME, this.level.getGameTime());
++            Iterator iterator = this.nearbyEntities.iterator();
++
++            while (iterator.hasNext()) {
++                LivingEntity entityliving = (LivingEntity) iterator.next();
++
++                if (entityliving.isAlive() && !entityliving.isRemoved() && blockposition.closerToCenterThan(entityliving.position(), 32.0D)) {
++                    entityliving.getBrain().setMemory(MemoryModuleType.HEARD_BELL_TIME, this.level.getGameTime()); // CraftBukkit - decompile error
+                 }
+             }
+         }
+ 
++        this.nearbyEntities.removeIf(e -> !e.isAlive()); // Paper
+     }
+ 
+     private static boolean areRaidersNearby(BlockPos pos, List<LivingEntity> hearingEntities) {
+-        for(LivingEntity livingEntity : hearingEntities) {
+-            if (livingEntity.isAlive() && !livingEntity.isRemoved() && pos.closerToCenterThan(livingEntity.position(), 32.0D) && livingEntity.getType().is(EntityTypeTags.RAIDERS)) {
+-                return true;
++        Iterator iterator = hearingEntities.iterator();
++
++        LivingEntity entityliving;
++
++        do {
++            if (!iterator.hasNext()) {
++                return false;
+             }
+-        }
+ 
+-        return false;
++            entityliving = (LivingEntity) iterator.next();
++        } while (!entityliving.isAlive() || entityliving.isRemoved() || !pos.closerToCenterThan(entityliving.position(), 32.0D) || !entityliving.getType().is(EntityTypeTags.RAIDERS));
++
++        return true;
+     }
+ 
+     private static void makeRaidersGlow(Level world, BlockPos pos, List<LivingEntity> hearingEntities) {
+-        hearingEntities.stream().filter((entity) -> {
+-            return isRaiderWithinRange(pos, entity);
+-        }).forEach(BellBlockEntity::glow);
++        List<org.bukkit.entity.LivingEntity> entities = // CraftBukkit
++        hearingEntities.stream().filter((entityliving) -> {
++            return BellBlockEntity.isRaiderWithinRange(pos, entityliving);
++        }).map((entity) -> (org.bukkit.entity.LivingEntity) entity.getBukkitEntity()).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)); // CraftBukkit
++
++        org.bukkit.craftbukkit.v1_20_R2.event.CraftEventFactory.handleBellResonateEvent(world, pos, entities).forEach(entity -> glow(entity, pos)); // Paper - pass BlockPos
++        // CraftBukkit end
+     }
+ 
+     private static void showBellParticles(Level world, BlockPos pos, List<LivingEntity> hearingEntities) {
+-        MutableInt mutableInt = new MutableInt(16700985);
+-        int i = (int)hearingEntities.stream().filter((entity) -> {
+-            return pos.closerToCenterThan(entity.position(), 48.0D);
++        MutableInt mutableint = new MutableInt(16700985);
++        int i = (int) hearingEntities.stream().filter((entityliving) -> {
++            return pos.closerToCenterThan(entityliving.position(), 48.0D);
+         }).count();
+-        hearingEntities.stream().filter((entity) -> {
+-            return isRaiderWithinRange(pos, entity);
+-        }).forEach((entity) -> {
++
++        hearingEntities.stream().filter((entityliving) -> {
++            return BellBlockEntity.isRaiderWithinRange(pos, entityliving);
++        }).forEach((entityliving) -> {
+             float f = 1.0F;
+-            double d = Math.sqrt((entity.getX() - (double)pos.getX()) * (entity.getX() - (double)pos.getX()) + (entity.getZ() - (double)pos.getZ()) * (entity.getZ() - (double)pos.getZ()));
+-            double e = (double)((float)pos.getX() + 0.5F) + 1.0D / d * (entity.getX() - (double)pos.getX());
+-            double g = (double)((float)pos.getZ() + 0.5F) + 1.0D / d * (entity.getZ() - (double)pos.getZ());
++            double d0 = Math.sqrt((entityliving.getX() - (double) pos.getX()) * (entityliving.getX() - (double) pos.getX()) + (entityliving.getZ() - (double) pos.getZ()) * (entityliving.getZ() - (double) pos.getZ()));
++            double d1 = (double) ((float) pos.getX() + 0.5F) + 1.0D / d0 * (entityliving.getX() - (double) pos.getX());
++            double d2 = (double) ((float) pos.getZ() + 0.5F) + 1.0D / d0 * (entityliving.getZ() - (double) pos.getZ());
+             int j = Mth.clamp((i - 21) / -2, 3, 15);
+ 
+-            for(int k = 0; k < j; ++k) {
+-                int l = mutableInt.addAndGet(5);
+-                double h = (double)FastColor.ARGB32.red(l) / 255.0D;
+-                double m = (double)FastColor.ARGB32.green(l) / 255.0D;
+-                double n = (double)FastColor.ARGB32.blue(l) / 255.0D;
+-                world.addParticle(ParticleTypes.ENTITY_EFFECT, e, (double)((float)pos.getY() + 0.5F), g, h, m, n);
++            for (int k = 0; k < j; ++k) {
++                int l = mutableint.addAndGet(5);
++                double d3 = (double) FastColor.ARGB32.red(l) / 255.0D;
++                double d4 = (double) FastColor.ARGB32.green(l) / 255.0D;
++                double d5 = (double) FastColor.ARGB32.blue(l) / 255.0D;
++
++                world.addParticle(ParticleTypes.ENTITY_EFFECT, d1, (double) ((float) pos.getY() + 0.5F), d2, d3, d4, d5);
+             }
+ 
+         });
+@@ -163,12 +191,17 @@
+         return entity.isAlive() && !entity.isRemoved() && pos.closerToCenterThan(entity.position(), 48.0D) && entity.getType().is(EntityTypeTags.RAIDERS);
+     }
+ 
+-    private static void glow(LivingEntity entity) {
++    // Paper start
++    private static void glow(LivingEntity entity) { glow(entity, null); }
++    private static void glow(LivingEntity entity, @javax.annotation.Nullable BlockPos pos) {
++        if (pos != null && !new io.papermc.paper.event.block.BellRevealRaiderEvent(entity.level().getWorld().getBlockAt(io.papermc.paper.util.MCUtil.toLocation(entity.level(), pos)), entity.getBukkitEntity()).callEvent()) return;
++        // Paper end
+         entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, 60));
+     }
+ 
+     @FunctionalInterface
+-    interface ResonationEndAction {
++    private interface ResonationEndAction {
++
+         void run(Level world, BlockPos pos, List<LivingEntity> hearingEntities);
+     }
+ }

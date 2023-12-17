@@ -1,0 +1,12 @@
+--- a/net/minecraft/world/entity/ai/behavior/WorkAtComposter.java
++++ b/net/minecraft/world/entity/ai/behavior/WorkAtComposter.java
+@@ -87,7 +87,9 @@
+                 simpleContainer.removeItemType(Items.WHEAT, m);
+                 ItemStack itemStack = simpleContainer.addItem(new ItemStack(Items.BREAD, l));
+                 if (!itemStack.isEmpty()) {
++                    entity.forceDrops = true; // Paper
+                     entity.spawnAtLocation(itemStack, 0.5F);
++                    entity.forceDrops = false; // Paper
+                 }
+ 
+             }
