@@ -14,6 +14,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/Biomes-Test.BiomesAPI-NMS.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/Biomes-Test.BiomesAPI-NMS.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Biomes-Test.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Biomes-Test.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Biomes-Test.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Biomes-Test.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R1.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R1.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R1.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R1.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R2.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_19_R2.main.iml" />
@@ -26,8 +27,10 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R2.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R2.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R3.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R3.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R3.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-1_20_R3.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/BiomesAPI-NMS.Biomes-Test.BiomesAPI-NMS.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/BiomesAPI-NMS.Biomes-Test.BiomesAPI-NMS.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI.Biomes-Test.test.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI.Biomes-Test.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/me.outspending.Biomes-Test.BiomesAPI-NMS.main.iml" filepath="$PROJECT_DIR$/.idea/modules/BiomesAPI-NMS/me.outspending.Biomes-Test.BiomesAPI-NMS.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/me.outspending.Biomes-Test.main.iml" filepath="$PROJECT_DIR$/.idea/modules/me.outspending.Biomes-Test.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/me.outspending.Biomes-Test.test.iml" filepath="$PROJECT_DIR$/.idea/modules/me.outspending.Biomes-Test.test.iml" />

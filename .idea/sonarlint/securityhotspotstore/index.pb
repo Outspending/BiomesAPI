@@ -42,3 +42,11 @@ g
 7src/main/java/me/outspending/biomesapi/BiomeSetter.java,7/8/78339dbffd7d9ec9e27809ec380e4d994739f97b
 h
 8src/main/java/me/outspending/biomesapi/BiomeUpdater.java,1/c/1cded3255478c22816ab3e92afed663521a65235
+^
+.java/me/outspending/biomesapi/BiomeSetter.java,c/6/c619571a43b585cc629837e5d74ede832f0edc65
+_
+/java/me/outspending/biomesapi/BiomeUpdater.java,2/c/2ce9ddb3952e28a56ad6c9f221c624c9f5980356
+_
+/java/me/outspending/biomesapi/BiomeHandler.java,4/8/48fea41e429aeed6584b0c9e7f48c7b86ec8df98
+d
+4java/me/outspending/biomesapi/BiomeTempModifier.java,5/5/55772bb238abc945afbfe4ca5a9a4c73572ee197
