@@ -2,8 +2,11 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.biome.Biome;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_20_R2.CraftWorld;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -140,36 +143,36 @@ public final class BiomeSetter {
      * @param updateBiome A flag indicating whether to update the biome of the chunk immediately.
      * @version 0.0.1
      */
-    @AsOf("0.0.1")
-    public static void setChunkBiome(
-            @NotNull Chunk chunk,
-            int minHeight,
-            int maxHeight,
-            @NotNull CustomBiome customBiome,
-            boolean updateBiome
-    ) {
+   @AsOf("0.0.1")
+   public static void setChunkBiome(
+           @NotNull Chunk chunk,
+           int minHeight,
+           int maxHeight,
+           @NotNull CustomBiome customBiome,
+           boolean updateBiome
+   ) {
         RegionAccessor accessor = chunk.getWorld();
         NamespacedKey key = customBiome.toNamespacedKey();
 
-        int minX = chunk.getX() - CHUNK_SIZE;
-        int maxX = chunk.getX() + CHUNK_SIZE;
+        int minX = chunk.getX() << 4;
+        int maxX = minX + 16;
 
-        int minZ = chunk.getZ() - CHUNK_SIZE;
-        int maxZ = chunk.getZ() + CHUNK_SIZE;
+        int minZ = chunk.getZ() << 4;
+        int maxZ = minZ + 16;
 
         for (int x = minX; x < maxX; x++) {
-            for (int y = minHeight; y < maxHeight; y++) {
-                for (int z = minZ; z < maxZ; z++) {
-                    // Set the biome of each block to the custom biome
-                    UNSAFE.setBiomeKey(accessor, x, y, z, key);
-                }
-            }
+           for (int y = minHeight; y < maxHeight; y++) {
+               for (int z = minZ; z < maxZ; z++) {
+                   // Set the biome of each block to the custom biome
+                   UNSAFE.setBiomeKey(accessor, x, y, z, key);
+               }
+           }
         }
 
         if (updateBiome) {
-            BiomeUpdater.updateChunk(chunk);
+           BiomeUpdater.updateChunk(chunk);
         }
-    }
+   }
 
     /**
      * Sets the biome of a bounding box to a custom biome.
@@ -196,6 +199,26 @@ public final class BiomeSetter {
     public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome) {
         if (from.getWorld().equals(to.getWorld())) {
             setRegionBiome(from.getWorld(), from.toVector(), to.toVector(), customBiome);
+            return;
+        }
+
+        throw new IllegalArgumentException("Locations must be in the same world!");
+    }
+
+    /**
+     * Sets the biome of a region to a custom biome.
+     * This method is a convenience method that calls the setRegionBiome method with the 'updateBiome' flag set to false.
+     *
+     * @param from the starting location
+     * @param to the ending location
+     * @param customBiome the custom biome
+     * @param updateBiome a flag indicating whether to update the biome of the region immediately
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
+        if (from.getWorld().equals(to.getWorld())) {
+            setRegionBiome(from.getWorld(), from.toVector(), to.toVector(), customBiome, updateBiome);
             return;
         }
 
@@ -237,15 +260,25 @@ public final class BiomeSetter {
             @NotNull CustomBiome customBiome,
             boolean updateBiome
     ) {
-        // Get the RegionAccessor for the location
         RegionAccessor accessor = getRegionAccessor(from.toLocation(world));
-        // Convert the custom biome to a NamespacedKey
         NamespacedKey key = customBiome.toNamespacedKey();
 
+        int minX = Math.min(from.getBlockX(), to.getBlockX());
+        int maxX = Math.max(from.getBlockX(), to.getBlockX());
+
+        int minY = Math.min(from.getBlockY(), to.getBlockY());
+        int maxY = Math.max(from.getBlockY(), to.getBlockY());
+
+        int minZ = Math.min(from.getBlockZ(), to.getBlockZ());
+        int maxZ = Math.max(from.getBlockZ(), to.getBlockZ());
+
+        int minHeight = Math.max(minY, MIN_HEIGHT);
+        int maxHeight = Math.min(maxY, MAX_HEIGHT);
+
         // Iterate over the blocks in the region
-        for (int x = from.getBlockX(); x <= to.getBlockX(); x++) {
-            for (int y = from.getBlockY(); y <= to.getBlockY(); y++) {
-                for (int z = from.getBlockZ(); z <= to.getBlockZ(); z++) {
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minHeight; y <= maxHeight; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
                     // Set the biome of each block to the custom biome
                     UNSAFE.setBiomeKey(accessor, x, y, z, key);
                 }

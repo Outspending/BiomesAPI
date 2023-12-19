@@ -3,6 +3,7 @@ package me.outspending.biomesapi;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.level.biome.Biome;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -39,12 +40,20 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
-        Chunk chunk = e.getBlock().getChunk();
+        long start = System.currentTimeMillis();
+
         CustomBiome biome = BiomeHandler.getBiome(new BiomeResourceKey("test", "custombiome"));
         if (biome == null) return;
 
-        Bukkit.broadcastMessage("Biome: " + biome.getResourceKey().toString());
-        BiomeSetter.setChunkBiome(chunk, biome, true);
+        int size = 150;
+
+        Location loc = e.getBlock().getLocation();
+        Location loc1 = loc.clone().add(size, size, size);
+        Location loc2 = loc.clone().add(-size, -size, -size);
+
+        BiomeSetter.setRegionBiome(loc1, loc2, biome, true);
+
+        Bukkit.broadcastMessage("Finished biome operation in " + (System.currentTimeMillis() - start) + "ms");
     }
 
 

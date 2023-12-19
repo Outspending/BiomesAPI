@@ -47,4 +47,25 @@ public final class BiomeResourceKey {
         return resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
     }
 
+    /**
+     * Overrides the equals method from the Object class.
+     * This method is used to compare this BiomeResourceKey with another object.
+     *
+     * @param obj the object to compare this BiomeResourceKey with
+     * @return true if the given object is a BiomeResourceKey and its namespace and path are equal to this BiomeResourceKey's namespace and path, false otherwise
+     * @version 0.0.1
+     */
+    @Override
+    @AsOf("0.0.1")
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        BiomeResourceKey key = (BiomeResourceKey) obj;
+        String namespace = key.getResourceLocation().getNamespace();
+        String path = key.getResourceLocation().getPath();
+
+        return namespace.equals(this.resourceLocation.getNamespace()) && path.equals(this.resourceLocation.getPath());
+    }
+
 }

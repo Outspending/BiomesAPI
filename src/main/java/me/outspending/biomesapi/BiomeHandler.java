@@ -45,7 +45,7 @@ public class BiomeHandler {
     @AsOf("0.0.1")
     public static @Nullable CustomBiome getBiome(@NotNull BiomeResourceKey resourceKey) {
         return registeredBiomes.stream()
-                .filter(b -> b.getResourceKey().equals(resourceKey))
+                .filter(b -> resourceKey.equals(b.getResourceKey()))
                 .findFirst()
                 .orElse(null);
     }

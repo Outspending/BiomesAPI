@@ -4,8 +4,11 @@ import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.lighting.LevelLightEngine;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -41,7 +44,7 @@ public final class BiomeUpdater {
      */
     @AsOf("0.0.1")
     private static @NotNull List<Chunk> getChunksBetweenLocations(@NotNull Location from, @NotNull Location to) {
-        if (from.getWorld().equals(to.getWorld())) {
+        if (!from.getWorld().equals(to.getWorld())) {
             throw new IllegalArgumentException("Locations must be in the same world.");
         }
 
@@ -68,23 +71,45 @@ public final class BiomeUpdater {
      * This method calculates the players that are located within the specified distance of the chunk.
      *
      * @param chunk The chunk.
-     * @param distance The distance.
      * @return A list of players within the specified distance of the chunk.
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    private static @NotNull List<Player> getPlayersInDistance(@NotNull Chunk chunk, int distance) {
-        List<Player> players = new ArrayList<>();
-
+    private static @NotNull List<Player> getPlayersInDistance(@NotNull Chunk chunk) {
         World world = chunk.getWorld();
-        Location location = chunk.getBlock(0, 0, 0).getLocation();
-        for (Player player : world.getPlayers()) {
-            if (player.getLocation().distance(location) <= distance) {
-                players.add(player);
-            }
-        }
 
-        return players;
+        return world.getPlayers().stream()
+                .filter(player -> inChunkViewDistance(player, chunk))
+                .toList();
+    }
+
+    /**
+     * Checks if a player is within the view distance of a chunk.
+     * This method calculates the distance between the player's chunk and the target chunk in both the X and Z axes.
+     * It then checks if these distances are less than or equal to the server's view distance.
+     * If both distances are within the view distance, the method returns true, indicating that the player is within the view distance of the chunk.
+     * Otherwise, it returns false.
+     *
+     * @param player The player to check.
+     * @param chunk The target chunk.
+     * @return True if the player is within the view distance of the chunk, false otherwise.
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    private static boolean inChunkViewDistance(@NotNull Player player, @NotNull Chunk chunk) {
+        Location playerLocation = player.getLocation();
+
+        int viewDistance = Bukkit.getViewDistance();
+        int playerChunkX = playerLocation.getChunk().getX();
+        int playerChunkZ = playerLocation.getChunk().getZ();
+
+        int targetChunkX = chunk.getX();
+        int targetChunkZ = chunk.getZ();
+
+        int deltaX = Math.abs(playerChunkX - targetChunkX);
+        int deltaZ = Math.abs(playerChunkZ - targetChunkZ);
+
+        return deltaX <= viewDistance && deltaZ <= viewDistance;
     }
 
     /**
@@ -109,7 +134,7 @@ public final class BiomeUpdater {
      */
     @AsOf("0.0.1")
     public static void updateChunk(@NotNull Chunk chunk, int distance) {
-        updateChunks(List.of(chunk), distance);
+        updateChunks(List.of(chunk));
     }
 
     /**
@@ -126,51 +151,24 @@ public final class BiomeUpdater {
     }
 
     /**
-     * Updates the biomes of the chunks between two locations within a certain distance.
-     * This method is a convenience method that calls the updateChunks method with the chunks between the 'from' and 'to' locations and the specified distance.
-     *
-     * @param from The starting location.
-     * @param to The ending location.
-     * @param distance The distance.
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public static void updateChunks(@NotNull Location from, @NotNull Location to, int distance) {
-        updateChunks(getChunksBetweenLocations(from, to), distance);
-    }
-
-    /**
-     * Updates the biomes of a list of chunks.
-     * This method is a convenience method that calls the updateChunks method with the list of chunks and a default distance of 250.
+     * Updates the biomes of a list of chunks within a certain distance.
+     * This method sends an update packet to all players within the specified distance of each chunk in the list.
+     * The update packet contains the new biome data for the chunk.
      *
      * @param chunks The chunks to update.
      * @version 0.0.1
      */
     @AsOf("0.0.1")
     public static void updateChunks(@NotNull List<Chunk> chunks) {
-        updateChunks(chunks, 250);
-    }
-
-    /**
-     * Updates the biomes of a list of chunks within a certain distance.
-     * This method sends an update packet to all players within the specified distance of each chunk in the list.
-     * The update packet contains the new biome data for the chunk.
-     *
-     * @param chunks The chunks to update.
-     * @param distance The distance.
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public static void updateChunks(@NotNull List<Chunk> chunks, int distance) {
         CompletableFuture.runAsync(() -> {
 
             for (Chunk chunk : chunks) {
-                LevelChunk craftChunk = (LevelChunk) ((CraftChunk) chunk).getHandle(ChunkStatus.BIOMES);
-                List<Player> updatePlayers = getPlayersInDistance(chunk, distance);
-                ClientboundLevelChunkPacketData packet = new ClientboundLevelChunkPacketData(craftChunk, null);
-                for (Player player : updatePlayers) {
-                    // Send update packet
-                    ((CraftPlayer) player).getHandle().connection.send((Packet<?>) packet);
+                LevelChunk levelChunk = (LevelChunk) ((CraftChunk) chunk).getHandle(ChunkStatus.BIOMES);
+                LevelLightEngine levelLightEngine = levelChunk.getLevel().getLightEngine();
+
+                ClientboundLevelChunkWithLightPacket packet = new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, null, null, true);
+                for (Player player : getPlayersInDistance(chunk)) {
+                    ((CraftPlayer) player).getHandle().connection.send(packet);
                 }
             }
 
