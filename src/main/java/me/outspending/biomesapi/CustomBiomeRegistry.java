@@ -40,7 +40,7 @@ public class CustomBiomeRegistry implements BiomeRegistry {
                     .orElseThrow(() -> new IllegalStateException("Biome registry not available"));
 
             // Get the ResourceLocation and BiomeSettings from the CustomBiome object
-            ResourceLocation resourceLocation = biome.getResourceKey().getResourceLocation();
+            ResourceLocation resourceLocation = biome.getResourceKey().resourceLocation();
             BiomeSettings settings = biome.getSettings();
 
             // Create a new Biome object with the settings and colors from the CustomBiome object

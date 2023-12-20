@@ -101,7 +101,7 @@ public final class CustomBiome {
      */
     @AsOf("0.0.1")
     public NamespacedKey toNamespacedKey() {
-        ResourceLocation location = resourceKey.getResourceLocation();
+        ResourceLocation location = resourceKey.resourceLocation();
         return new NamespacedKey(location.getNamespace(), location.getPath());
     }
 

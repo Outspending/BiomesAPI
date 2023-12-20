@@ -2,11 +2,8 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.biome.Biome;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_20_R2.CraftWorld;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -22,24 +19,10 @@ import org.jetbrains.annotations.NotNull;
 @AsOf("0.0.1")
 public final class BiomeSetter {
 
-    /**
-     * UnsafeValues instance used to perform unsafe operations.
-     */
     private static final UnsafeValues UNSAFE = Bukkit.getUnsafe();
 
-    /**
-     * Size of a chunk in blocks.
-     */
-    private static final int CHUNK_SIZE = 16;
 
-    /**
-     * Maximum height of a chunk.
-     */
     private static final int MAX_HEIGHT = 320;
-
-    /**
-     * Minimum height of a chunk.
-     */
     private static final int MIN_HEIGHT = -64;
 
     /**

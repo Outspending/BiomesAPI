@@ -3,14 +3,6 @@ package me.outspending.biomesapi;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
-import me.outspending.biomesapi.nms.NMSHandler;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.level.biome.Biome;
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +21,7 @@ import java.util.List;
 public class BiomeHandler {
 
     @Getter
-    protected static final List<CustomBiome> registeredBiomes = new ArrayList<>();
+    private static final List<CustomBiome> registeredBiomes = new ArrayList<>();
 
     /**
      * This method retrieves a Biome object from the Minecraft server's biome registry.

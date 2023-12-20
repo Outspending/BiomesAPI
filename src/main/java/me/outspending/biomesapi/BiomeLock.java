@@ -2,16 +2,13 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.nms.NMS;
+import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.core.MappedRegistry;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.level.biome.Biome;
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 
-import java.lang.reflect.Field;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -43,10 +40,9 @@ public final class BiomeLock {
      */
     @AsOf("0.0.1")
     static void unlock(Supplier<?> supplier) {
-        MappedRegistry<Biome> biomes = getRegistry(Registries.BIOME);
-        changeRegistryLock(false);
-        supplier.get();
-        biomes.freeze();
+        Optional<NMS> nms = NMSHandler.getNMS();
+
+        nms.ifPresent(nmsInstance -> nmsInstance.unlockRegistry(supplier));
     }
 
     /**
@@ -63,35 +59,9 @@ public final class BiomeLock {
      */
     @AsOf("0.0.1")
     static void changeRegistryLock(boolean isLocked) {
-        MappedRegistry<Biome> biomes = getRegistry(Registries.BIOME);
-        try {
-            Class<?> registryBiomeClass = Class.forName("net.minecraft.core.RegistryMaterials");
-            for (Field field : registryBiomeClass.getDeclaredFields()) {
-                if (field.getType() == boolean.class) {
-                    field.setAccessible(true);
-                    field.setBoolean(biomes, isLocked);
-                }
-            }
-        } catch (ClassNotFoundException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
+        Optional<NMS> nms = NMSHandler.getNMS();
 
-    /**
-     * This method retrieves a MappedRegistry object from the Minecraft server.
-     * It uses the Bukkit API to get the server instance and then accesses the server's registry.
-     * The registry is then cast to a MappedRegistry object and returned.
-     *
-     * @param key The ResourceKey for the registry that needs to be retrieved.
-     * @return MappedRegistry object corresponding to the provided ResourceKey.
-     * @throws RuntimeException if the registry corresponding to the provided ResourceKey does not exist.
-     *
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    static <T> MappedRegistry<T> getRegistry(ResourceKey<Registry<T>> key) {
-        DedicatedServer server = ((CraftServer) Bukkit.getServer()).getServer();
-        return (MappedRegistry<T>) server.registryAccess().registryOrThrow(key);
+        nms.ifPresent(nmsInstance -> nmsInstance.biomeRegistryLock(isLocked));
     }
 
 }

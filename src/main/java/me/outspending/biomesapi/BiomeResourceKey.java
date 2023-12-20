@@ -12,14 +12,8 @@ import org.jetbrains.annotations.NotNull;
  *
  * @version 0.0.1
  */
-@Getter
 @AsOf("0.0.1")
-public final class BiomeResourceKey {
-
-    /**
-     * The ResourceLocation object that this key represents.
-     */
-    private final ResourceLocation resourceLocation;
+public record BiomeResourceKey(@NotNull ResourceLocation resourceLocation) {
 
     /**
      * Constructs a new BiomeResourceKey with the given key and path.
@@ -31,7 +25,7 @@ public final class BiomeResourceKey {
      */
     @AsOf("0.0.1")
     public BiomeResourceKey(@NotNull String key, @NotNull String path) {
-        this.resourceLocation = new ResourceLocation(key.toLowerCase(), path.toLowerCase());
+        this(new ResourceLocation(key.toLowerCase(), path.toLowerCase()));
     }
 
     /**
@@ -62,8 +56,8 @@ public final class BiomeResourceKey {
         if (obj == null || getClass() != obj.getClass()) return false;
 
         BiomeResourceKey key = (BiomeResourceKey) obj;
-        String namespace = key.getResourceLocation().getNamespace();
-        String path = key.getResourceLocation().getPath();
+        String namespace = key.resourceLocation().getNamespace();
+        String path = key.resourceLocation().getPath();
 
         return namespace.equals(this.resourceLocation.getNamespace()) && path.equals(this.resourceLocation.getPath());
     }

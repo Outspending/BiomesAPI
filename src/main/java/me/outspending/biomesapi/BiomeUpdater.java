@@ -2,6 +2,8 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.nms.NMS;
+import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -19,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -64,52 +67,6 @@ public final class BiomeUpdater {
         }
 
         return chunks;
-    }
-
-    /**
-     * Returns a list of players within a certain distance of a chunk.
-     * This method calculates the players that are located within the specified distance of the chunk.
-     *
-     * @param chunk The chunk.
-     * @return A list of players within the specified distance of the chunk.
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    private static @NotNull List<Player> getPlayersInDistance(@NotNull Chunk chunk) {
-        World world = chunk.getWorld();
-
-        return world.getPlayers().stream()
-                .filter(player -> inChunkViewDistance(player, chunk))
-                .toList();
-    }
-
-    /**
-     * Checks if a player is within the view distance of a chunk.
-     * This method calculates the distance between the player's chunk and the target chunk in both the X and Z axes.
-     * It then checks if these distances are less than or equal to the server's view distance.
-     * If both distances are within the view distance, the method returns true, indicating that the player is within the view distance of the chunk.
-     * Otherwise, it returns false.
-     *
-     * @param player The player to check.
-     * @param chunk The target chunk.
-     * @return True if the player is within the view distance of the chunk, false otherwise.
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    private static boolean inChunkViewDistance(@NotNull Player player, @NotNull Chunk chunk) {
-        Location playerLocation = player.getLocation();
-
-        int viewDistance = Bukkit.getViewDistance();
-        int playerChunkX = playerLocation.getChunk().getX();
-        int playerChunkZ = playerLocation.getChunk().getZ();
-
-        int targetChunkX = chunk.getX();
-        int targetChunkZ = chunk.getZ();
-
-        int deltaX = Math.abs(playerChunkX - targetChunkX);
-        int deltaZ = Math.abs(playerChunkZ - targetChunkZ);
-
-        return deltaX <= viewDistance && deltaZ <= viewDistance;
     }
 
     /**
@@ -160,19 +117,9 @@ public final class BiomeUpdater {
      */
     @AsOf("0.0.1")
     public static void updateChunks(@NotNull List<Chunk> chunks) {
-        CompletableFuture.runAsync(() -> {
+        Optional<NMS> nms = NMSHandler.getNMS();
 
-            for (Chunk chunk : chunks) {
-                LevelChunk levelChunk = (LevelChunk) ((CraftChunk) chunk).getHandle(ChunkStatus.BIOMES);
-                LevelLightEngine levelLightEngine = levelChunk.getLevel().getLightEngine();
-
-                ClientboundLevelChunkWithLightPacket packet = new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, null, null, true);
-                for (Player player : getPlayersInDistance(chunk)) {
-                    ((CraftPlayer) player).getHandle().connection.send(packet);
-                }
-            }
-
-        });
+        nms.ifPresent(nmsInstance -> nmsInstance.updateChunks(chunks));
     }
 
 }

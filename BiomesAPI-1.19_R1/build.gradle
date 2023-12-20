@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
@@ -20,26 +19,10 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT");
+    paperweight.paperDevBundle('1.19-R0.1-SNAPSHOT')
 
     implementation project(':BiomesAPI-NMS')
 
-    implementation project(":BiomesAPI-1.19_R1")
-    implementation project(":BiomesAPI-1.19_R2")
-    implementation project(":BiomesAPI-1.19_R3")
-
-    implementation project(":BiomesAPI-1.20_R1")
-    implementation project(":BiomesAPI-1.20_R2")
-    implementation project(":BiomesAPI-1.20_R3")
-
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
-
-shadowJar {
-    destinationDirectory = file("/home/Josh/Servers/TestServer/plugins/");
 }

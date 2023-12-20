@@ -1,9 +1,8 @@
 package me.outspending.biomesapi;
 
+import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.level.biome.Biome;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,6 +14,8 @@ public class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
+        NMSHandler.init(); // Initialize NMS
+
         CustomBiome biome = CustomBiome.builder()
                 .resourceKey(new BiomeResourceKey("test", "custombiome"))
                 .settings(BiomeSettings.defaultSettings())
