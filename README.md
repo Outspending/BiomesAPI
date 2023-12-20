@@ -42,7 +42,6 @@ BiomesAPI stands out as an effortlessly simple and lightweight API, allowing the
 - Open-source
 - Free
 - Server-friendly operation without restarts
-- No reliance on NMS
 
 ### Disadvantages
 - Exclusive compatibility with PaperMC and Spigot
