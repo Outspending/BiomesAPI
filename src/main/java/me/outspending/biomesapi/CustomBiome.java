@@ -36,6 +36,15 @@ public final class CustomBiome {
     // Optional Settings
     private ParticleRenderer particleRenderer;
 
+    /**
+     * Formats a hexadecimal color string by removing the leading '#' if present.
+     * This method is used to ensure that the color strings are in the correct format for parsing.
+     *
+     * @param color the color string to format
+     * @return the formatted color string
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
     private String formatHex(@NotNull String color) {
         if (color.startsWith("#"))
             color = color.substring(1);
