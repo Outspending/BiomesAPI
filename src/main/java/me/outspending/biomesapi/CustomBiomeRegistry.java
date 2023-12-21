@@ -2,14 +2,10 @@ package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.core.Registry;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.level.biome.*;
-import net.minecraft.world.level.levelgen.GenerationStep;
-import org.bukkit.Bukkit;
-import org.bukkit.MusicInstrument;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -56,7 +52,6 @@ public class CustomBiomeRegistry implements BiomeRegistry {
             // Check if a custom particle renderer is provided
             ParticleRenderer renderer;
             if ((renderer = biome.getParticleRenderer()) != null) {
-                Bukkit.broadcastMessage("Custom particle renderer found");
                 effectsBuilder.ambientParticle(new AmbientParticleSettings(
                         renderer.ambientParticle().getParticle(),
                         renderer.probability()

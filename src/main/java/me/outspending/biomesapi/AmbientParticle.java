@@ -92,6 +92,15 @@ public enum AmbientParticle {
 
     private final SimpleParticleType particle;
 
+    /**
+     * Constructor for the AmbientParticle enum.
+     * This constructor is used to associate a specific SimpleParticleType with each ambient particle.
+     * The @AsOf annotation indicates the version when this constructor was introduced.
+     *
+     * @param particle the SimpleParticleType associated with the ambient particle
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
     AmbientParticle(SimpleParticleType particle) {
         this.particle = particle;
     }

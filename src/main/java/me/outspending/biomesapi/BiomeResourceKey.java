@@ -16,6 +16,35 @@ import org.jetbrains.annotations.NotNull;
 public record BiomeResourceKey(@NotNull ResourceLocation resourceLocation) {
 
     /**
+     * Creates a new BiomeResourceKey from the given key and path.
+     * This is a static factory method that provides a convenient way to create a new BiomeResourceKey instance.
+     * The key and path are used to create a new ResourceLocation, which is then used to create the BiomeResourceKey.
+     *
+     * @param key  the key for the resource location
+     * @param path the path for the resource location
+     * @return a new BiomeResourceKey with the given key and path
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    public static @NotNull BiomeResourceKey of(@NotNull String key, @NotNull String path) {
+        return new BiomeResourceKey(key, path);
+    }
+
+    /**
+     * Creates a new BiomeResourceKey from the given ResourceLocation.
+     * This is a static factory method that provides a convenient way to create a new BiomeResourceKey instance.
+     * The ResourceLocation is used directly to create the BiomeResourceKey.
+     *
+     * @param resourceLocation the ResourceLocation to create the BiomeResourceKey from
+     * @return a new BiomeResourceKey with the given ResourceLocation
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    public static @NotNull BiomeResourceKey of(@NotNull ResourceLocation resourceLocation) {
+        return new BiomeResourceKey(resourceLocation);
+    }
+
+    /**
      * Constructs a new BiomeResourceKey with the given key and path.
      * The key and path are converted to lower case before being used to create a new ResourceLocation.
      *

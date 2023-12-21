@@ -2,6 +2,7 @@ package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
 /**
  * This is a record class that represents the settings for a biome in Minecraft.
@@ -12,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
  */
 @AsOf("0.0.1")
 public record BiomeSettings(
-        float depth,
-        float scale,
-        float temperature,
-        float downfall,
+        @Range(from = 0, to = 25) float depth,
+        @Range(from = 0, to = 25) float scale,
+        @Range(from = 0, to = 25) float temperature,
+        @Range(from = 0, to = 25) float downfall,
         @NotNull BiomeTempModifier modifier
 ) {
 

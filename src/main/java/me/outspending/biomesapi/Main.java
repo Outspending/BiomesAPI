@@ -18,15 +18,15 @@ public class Main extends JavaPlugin implements Listener {
         NMSHandler.init(); // Initialize NMS
 
         CustomBiome biome = CustomBiome.builder()
-                .resourceKey(new BiomeResourceKey("test", "custombiome"))
-                .particleRenderer(new ParticleRenderer(AmbientParticle.EXPLOSION, 0.05F))
+                .resourceKey(BiomeResourceKey.of("test", "custombiome"))
+                .particleRenderer(ParticleRenderer.defaultSettings())
                 .settings(BiomeSettings.defaultSettings())
-                .fogColor("db4929")
-                .foliageColor("22c1c8")
-                .skyColor("c8227d")
-                .waterColor("c82222")
-                .waterFogColor("b9de2e")
-                .grassColor("40df8b")
+                .fogColor("#db4929")
+                .foliageColor("#22c1c8")
+                .skyColor("#c8227d")
+                .waterColor("#c82222")
+                .waterFogColor("#b9de2e")
+                .grassColor("#40df8b")
                 .build();
 
         // This wont be needed when API is done

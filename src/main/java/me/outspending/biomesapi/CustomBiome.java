@@ -36,6 +36,13 @@ public final class CustomBiome {
     // Optional Settings
     private ParticleRenderer particleRenderer;
 
+    private String formatHex(@NotNull String color) {
+        if (color.startsWith("#"))
+            color = color.substring(1);
+
+        return color;
+    }
+
     /**
      * This constructor creates a new CustomBiome object with the required settings and colors.
      *
@@ -62,10 +69,12 @@ public final class CustomBiome {
     ) {
         this.resourceKey = resourceKey;
         this.settings = settings;
-        this.fogColor = Integer.parseInt(fogColor, 16);
-        this.waterColor = Integer.parseInt(waterColor, 16);
-        this.waterFogColor = Integer.parseInt(waterFogColor, 16);
-        this.skyColor = Integer.parseInt(skyColor, 16);
+        this.particleRenderer = particleRenderer;
+
+        this.fogColor = Integer.parseInt(formatHex(fogColor), 16);
+        this.waterColor = Integer.parseInt(formatHex(waterColor), 16);
+        this.waterFogColor = Integer.parseInt(formatHex(waterFogColor), 16);
+        this.skyColor = Integer.parseInt(formatHex(skyColor), 16);
     }
 
     /**
@@ -97,8 +106,8 @@ public final class CustomBiome {
             @NotNull ParticleRenderer particleRenderer
     ) {
         this(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor, particleRenderer);
-        this.foliageColor = Integer.parseInt(foliageColor, 16);
-        this.grassColor = Integer.parseInt(grassColor, 16);
+        this.foliageColor = Integer.parseInt(formatHex(foliageColor), 16);
+        this.grassColor = Integer.parseInt(formatHex(grassColor), 16);
     }
 
     /**
