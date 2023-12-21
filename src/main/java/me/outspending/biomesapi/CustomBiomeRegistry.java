@@ -2,13 +2,14 @@ package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.core.Registry;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.BiomeGenerationSettings;
-import net.minecraft.world.level.biome.BiomeSpecialEffects;
-import net.minecraft.world.level.biome.MobSpawnSettings;
+import net.minecraft.world.level.biome.*;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import org.bukkit.Bukkit;
+import org.bukkit.MusicInstrument;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -44,28 +45,43 @@ public class CustomBiomeRegistry implements BiomeRegistry {
             BiomeSettings settings = biome.getSettings();
 
             // Create a new Biome object with the settings and colors from the CustomBiome object
+            BiomeSpecialEffects.Builder effectsBuilder = new BiomeSpecialEffects.Builder()
+                    .fogColor(biome.getFogColor())
+                    .foliageColorOverride(biome.getFoliageColor())
+                    .skyColor(biome.getSkyColor())
+                    .waterColor(biome.getWaterColor())
+                    .waterFogColor(biome.getWaterFogColor())
+                    .grassColorOverride(biome.getGrassColor());
+
+            // Check if a custom particle renderer is provided
+            ParticleRenderer renderer;
+            if ((renderer = biome.getParticleRenderer()) != null) {
+                Bukkit.broadcastMessage("Custom particle renderer found");
+                effectsBuilder.ambientParticle(new AmbientParticleSettings(
+                        renderer.ambientParticle().getParticle(),
+                        renderer.probability()
+                ));
+            }
+
+            // Build the Biome object
             Biome createdBiome = new Biome.BiomeBuilder()
                     .downfall(settings.downfall())
                     .temperature(settings.temperature())
                     .temperatureAdjustment(settings.modifier().getModifier())
                     .mobSpawnSettings(MobSpawnSettings.EMPTY)
                     .generationSettings(BiomeGenerationSettings.EMPTY)
-                    .specialEffects(new BiomeSpecialEffects.Builder()
-                            .fogColor(biome.getFogColor())
-                            .foliageColorOverride(biome.getFoliageColor())
-                            .skyColor(biome.getSkyColor())
-                            .waterColor(biome.getWaterColor())
-                            .waterFogColor(biome.getWaterFogColor())
-                            .grassColorOverride(biome.getGrassColor())
-                            .build())
+                    .specialEffects(effectsBuilder.build())
                     .build();
 
             // Register the new Biome object to the biome registry
             Registry.register(registry, resourceLocation, createdBiome);
+
+            // Add the custom biome to the list of registered biomes
             BiomeHandler.getRegisteredBiomes().add(biome);
 
             return null;
         });
     }
+
 
 }

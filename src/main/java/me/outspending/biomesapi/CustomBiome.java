@@ -1,5 +1,6 @@
 package me.outspending.biomesapi;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import me.outspending.biomesapi.annotations.AsOf;
@@ -32,6 +33,9 @@ public final class CustomBiome {
     private int foliageColor = 0;
     private int grassColor = 0;
 
+    // Optional Settings
+    private ParticleRenderer particleRenderer;
+
     /**
      * This constructor creates a new CustomBiome object with the required settings and colors.
      *
@@ -52,7 +56,9 @@ public final class CustomBiome {
             @NotNull String fogColor,
             @NotNull String waterColor,
             @NotNull String waterFogColor,
-            @NotNull String skyColor
+            @NotNull String skyColor,
+
+            @NotNull ParticleRenderer particleRenderer
     ) {
         this.resourceKey = resourceKey;
         this.settings = settings;
@@ -86,9 +92,11 @@ public final class CustomBiome {
             @NotNull String waterFogColor,
             @NotNull String skyColor,
             @NotNull String foliageColor,
-            @NotNull String grassColor
+            @NotNull String grassColor,
+
+            @NotNull ParticleRenderer particleRenderer
     ) {
-        this(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor);
+        this(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor, particleRenderer);
         this.foliageColor = Integer.parseInt(foliageColor, 16);
         this.grassColor = Integer.parseInt(grassColor, 16);
     }
@@ -136,6 +144,8 @@ public final class CustomBiome {
 
         private String foliageColor;
         private String grassColor;
+
+        private ParticleRenderer particleRenderer;
 
         /**
          * This method sets the BiomeResourceKey property of the CustomBiome.
@@ -242,6 +252,19 @@ public final class CustomBiome {
         }
 
         /**
+         * This method sets the particle renderer property of the CustomBiome.
+         *
+         * @param particleRenderer The particle renderer of the custom biome.
+         * @version 0.0.1
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder particleRenderer(@NotNull ParticleRenderer particleRenderer) {
+            this.particleRenderer = particleRenderer;
+            return this;
+        }
+
+        /**
          * This method creates a new CustomBiome object with the properties set in the Builder.
          *
          * @version 0.0.1
@@ -249,7 +272,20 @@ public final class CustomBiome {
          */
         @AsOf("0.0.1")
         public @NotNull CustomBiome build() {
-            return new CustomBiome(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor, foliageColor, grassColor);
+            Preconditions.checkArgument(resourceKey != null, "Resource key must be set");
+            Preconditions.checkArgument(settings != null, "Settings must be set");
+
+            return new CustomBiome(
+                    resourceKey,
+                    settings,
+                    fogColor,
+                    waterColor,
+                    waterFogColor,
+                    skyColor,
+                    foliageColor,
+                    grassColor,
+                    particleRenderer
+            );
         }
 
     }

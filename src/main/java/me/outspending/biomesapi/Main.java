@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 
 public class Main extends JavaPlugin implements Listener {
@@ -18,6 +19,7 @@ public class Main extends JavaPlugin implements Listener {
 
         CustomBiome biome = CustomBiome.builder()
                 .resourceKey(new BiomeResourceKey("test", "custombiome"))
+                .particleRenderer(new ParticleRenderer(AmbientParticle.EXPLOSION, 0.05F))
                 .settings(BiomeSettings.defaultSettings())
                 .fogColor("db4929")
                 .foliageColor("22c1c8")
