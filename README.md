@@ -27,6 +27,9 @@ dependencies {
 
 And that's it! You've successfully added BiomesAPI into your project!
 
+### Nightly Builds
+For more information about Nightly builds please visit [this](https://github.com/Outspending/BiomesAPI/wiki/Nightly-Builds).
+
 ## Usage
 Explore helpful examples to kickstart your BiomesAPI journey [here](https://github.com/Outspending/BiomesAPI/wiki).
 
