@@ -1,11 +1,16 @@
 plugins {
     id 'java'
+    id 'maven-publish'
+
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
-group = 'me.outspending'
-version = '1.0-SNAPSHOT'
+sourceCompatibility = 17
+targetCompatibility = 17
+
+group = 'com.github.Outspending'
+version = '0.0.1'
 
 repositories {
     mavenCentral()
@@ -34,6 +39,19 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+wrapper {
+    gradleVersion = '7.3.3'
+    distributionType = Wrapper.DistributionType.ALL
 }
 
 tasks.withType(JavaCompile) {

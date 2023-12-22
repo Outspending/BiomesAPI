@@ -14,6 +14,20 @@ import org.jetbrains.annotations.NotNull;
 public record ParticleRenderer(@NotNull AmbientParticle ambientParticle, float probability) {
 
     /**
+     * Creates a new ParticleRenderer with the given ambient particle and probability.
+     * This is a static factory method that provides a convenient way to create a new ParticleRenderer instance.
+     *
+     * @param ambientParticle the ambient particle for the particle renderer
+     * @param probability     the probability for the particle renderer
+     * @return a new ParticleRenderer with the given ambient particle and probability
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    public static @NotNull ParticleRenderer of(@NotNull AmbientParticle ambientParticle, float probability) {
+        return new ParticleRenderer(ambientParticle, probability);
+    }
+
+    /**
      * Provides a default setting for the ParticleRenderer.
      * The default ambient particle is set to CLOUD and the default probability is set to 0.008F.
      *

@@ -3,8 +3,8 @@ plugins {
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
-group = 'me.outspending'
-version = '1.0-SNAPSHOT'
+group = 'com.github.Outspending'
+version = '0.0.1'
 
 repositories {
     mavenCentral()

@@ -1,0 +1,18 @@
+jdk:
+  - openjdk17
+
+before_install:
+  - chmod +x gradlew
+
+install: true
+
+script:
+  - ./gradlew clean build
+
+after_success:
+  - ./gradlew publish
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/

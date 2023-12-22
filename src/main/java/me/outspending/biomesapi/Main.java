@@ -8,7 +8,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 
 public class Main extends JavaPlugin implements Listener {
@@ -43,21 +42,12 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
-        long start = System.currentTimeMillis();
-
         CustomBiome biome = BiomeHandler.getBiome(new BiomeResourceKey("test", "custombiome"));
         if (biome == null) return;
 
-        int size = 150;
+        Chunk chunk = e.getBlock().getChunk();
 
-        Location loc = e.getBlock().getLocation();
-        Location loc1 = loc.clone().add(size, size, size);
-        Location loc2 = loc.clone().add(-size, -size, -size);
-
-        BiomeSetter.setRegionBiome(loc1, loc2, biome, true);
-
-        Bukkit.broadcastMessage("Finished biome operation in " + (System.currentTimeMillis() - start) + "ms");
+        BiomeSetter.setChunkBiome(chunk, biome, true);
     }
-
 
 }
