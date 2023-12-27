@@ -9,7 +9,7 @@ plugins {
 sourceCompatibility = 17
 targetCompatibility = 17
 
-group = 'com.github.Outspending'
+group = 'com.github.outspending'
 version = '0.0.1'
 
 repositories {
@@ -41,9 +41,13 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
+java {}
+
 publishing {
     publications {
-        maven(MavenPublication) {
+        create('maven', MavenPublication) {
+            groupId = 'com.github.outspending'
+            artifactId = 'BiomesAPI'
             from components.java
         }
     }
@@ -58,6 +62,6 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-shadowJar {
-    destinationDirectory = file("/home/Josh/Servers/TestServer/plugins/");
-}
+// shadowJar {
+//     destinationDirectory = file("/home/Josh/Servers/TestServer/plugins/");
+// }
