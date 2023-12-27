@@ -41,8 +41,6 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
-java {}
-
 publishing {
     publications {
         create('maven', MavenPublication) {
@@ -54,7 +52,7 @@ publishing {
 }
 
 wrapper {
-    gradleVersion = '7.3.3'
+    gradleVersion = '8.1.1'
     distributionType = Wrapper.DistributionType.ALL
 }
 

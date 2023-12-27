@@ -1,4 +1,5 @@
 before_install:
+  # the project uses java 17
   - sdk install java 17.0.2-open
   - sdk use java 17.0.2-open
 
