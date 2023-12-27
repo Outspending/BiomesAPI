@@ -1,9 +1,8 @@
 package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.nms.NMSHandler;
-import net.minecraft.server.dedicated.DedicatedServer;
-import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -28,11 +27,8 @@ public class Main extends JavaPlugin implements Listener {
                 .grassColor("#40df8b")
                 .build();
 
-        // This wont be needed when API is done
-        DedicatedServer server = ((CraftServer) getServer()).getServer();
-
         // Register the newly created biome
-        BiomeRegistry.newRegistry().register(server, biome);
+        BiomeRegistry.newRegistry().register(biome);
     }
 
     @Override

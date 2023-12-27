@@ -3,6 +3,7 @@ package me.outspending.biomesapi;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.exceptions.UnknownBiomeException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +33,7 @@ public class BiomeHandler {
      * @param resourceKey The BiomeResourceKey for the biome that needs to be retrieved.
      * @return Biome object corresponding to the provided BiomeResourceKey, or null if the biome does not exist.
      *
+     * @throws UnknownBiomeException if the biome does not exist in the registry.
      * @version 0.0.1
      */
     @AsOf("0.0.1")
@@ -39,7 +41,7 @@ public class BiomeHandler {
         return registeredBiomes.stream()
                 .filter(b -> resourceKey.equals(b.getResourceKey()))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new UnknownBiomeException("Unknown biome: " + resourceKey));
     }
 
     /**

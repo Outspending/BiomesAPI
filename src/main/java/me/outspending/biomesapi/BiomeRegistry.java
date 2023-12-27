@@ -1,7 +1,7 @@
 package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
-import net.minecraft.server.dedicated.DedicatedServer;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -31,11 +31,10 @@ public interface BiomeRegistry {
      * This method registers a custom biome to a Minecraft server.
      * It takes a DedicatedServer object and a CustomBiome object as arguments.
      *
-     * @param server The DedicatedServer object to which the custom biome should be registered.
      * @version 0.0.1
      * @param biome The CustomBiome object that should be registered to the server.
      */
     @AsOf("0.0.1")
-    void register(@NotNull DedicatedServer server, @NotNull CustomBiome biome);
+    void register(@NotNull CustomBiome biome);
 
 }

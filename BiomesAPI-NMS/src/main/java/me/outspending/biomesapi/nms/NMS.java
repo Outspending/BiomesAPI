@@ -1,8 +1,14 @@
 package me.outspending.biomesapi.nms;
 
-import org.bukkit.*;
+import net.minecraft.core.Registry;
+import net.minecraft.world.level.biome.Biome;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -66,5 +72,16 @@ public interface NMS {
      * @param supplier The supplier to use to unlock the registry.
      */
     void unlockRegistry(@NotNull Supplier<?> supplier);
+
+    /**
+     * Retrieves the biome registry from the Minecraft server.
+     *
+     * This method gets the server instance from the Bukkit API, accesses the registry of the server,
+     * and retrieves the biome registry. If the biome registry cannot be retrieved, it throws a RuntimeException.
+     *
+     * @return The biome registry from the Minecraft server.
+     * @throws RuntimeException if the biome registry cannot be retrieved.
+     */
+    @NotNull Registry<Biome> getRegistry();
 
 }
