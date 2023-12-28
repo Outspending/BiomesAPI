@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'maven-publish'
 
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
@@ -26,26 +27,29 @@ repositories {
     }
 }
 
+// NMS Versions
+def biomesApiVersions = ["1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3"]
+
 dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
     implementation project(':BiomesAPI-NMS')
 
-    // implementation project(":BiomesAPI-1.19_R1")        1.19_R1 is not supported anymore
-    implementation project(":BiomesAPI-1.19_R2")
-    implementation project(":BiomesAPI-1.19_R3")
-
-    implementation project(":BiomesAPI-1.20_R1")
-    implementation project(":BiomesAPI-1.20_R2")
-    implementation project(":BiomesAPI-1.20_R3")
+    biomesApiVersions.each { version ->
+        implementation project(path: ":BiomesAPI-${version}", configuration: 'reobf')
+    }
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
-tasks.assemble {
-    dependsOn(reobfJar)
+configurations {
+
 }
+
+//tasks.assemble {
+//    dependsOn(reobfJar)
+//}
 
 publishing {
     publications {

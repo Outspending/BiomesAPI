@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.resources.ResourceLocation;
+import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,22 +39,6 @@ public final class CustomBiome {
     private ParticleRenderer particleRenderer;
 
     /**
-     * Formats a hexadecimal color string by removing the leading '#' if present.
-     * This method is used to ensure that the color strings are in the correct format for parsing.
-     *
-     * @param color the color string to format
-     * @return the formatted color string
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    private String formatHex(@NotNull String color) {
-        if (color.startsWith("#"))
-            color = color.substring(1);
-
-        return color;
-    }
-
-    /**
      * This constructor creates a new CustomBiome object with the required settings and colors.
      *
      * @param resourceKey The BiomeResourceKey for the custom biome.
@@ -69,10 +55,10 @@ public final class CustomBiome {
             @NotNull BiomeResourceKey resourceKey,
             @NotNull BiomeSettings settings,
 
-            @NotNull String fogColor,
-            @NotNull String waterColor,
-            @NotNull String waterFogColor,
-            @NotNull String skyColor,
+            int fogColor,
+            int waterColor,
+            int waterFogColor,
+            int skyColor,
 
             @NotNull ParticleRenderer particleRenderer
     ) {
@@ -80,10 +66,10 @@ public final class CustomBiome {
         this.settings = settings;
         this.particleRenderer = particleRenderer;
 
-        this.fogColor = Integer.parseInt(formatHex(fogColor), 16);
-        this.waterColor = Integer.parseInt(formatHex(waterColor), 16);
-        this.waterFogColor = Integer.parseInt(formatHex(waterFogColor), 16);
-        this.skyColor = Integer.parseInt(formatHex(skyColor), 16);
+        this.fogColor = fogColor;
+        this.waterColor = waterColor;
+        this.waterFogColor = waterFogColor;
+        this.skyColor = skyColor;
     }
 
     /**
@@ -105,18 +91,18 @@ public final class CustomBiome {
             @NotNull BiomeResourceKey resourceKey,
             @NotNull BiomeSettings settings,
 
-            @NotNull String fogColor,
-            @NotNull String waterColor,
-            @NotNull String waterFogColor,
-            @NotNull String skyColor,
-            @NotNull String foliageColor,
-            @NotNull String grassColor,
+            int fogColor,
+            int waterColor,
+            int waterFogColor,
+            int skyColor,
+            int foliageColor,
+            int grassColor,
 
             @NotNull ParticleRenderer particleRenderer
     ) {
         this(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor, particleRenderer);
-        this.foliageColor = Integer.parseInt(formatHex(foliageColor), 16);
-        this.grassColor = Integer.parseInt(formatHex(grassColor), 16);
+        this.foliageColor = foliageColor;
+        this.grassColor = grassColor;
     }
 
     /**
@@ -155,15 +141,29 @@ public final class CustomBiome {
         private BiomeResourceKey resourceKey;
         private BiomeSettings settings;
 
-        private String fogColor;
-        private String waterColor;
-        private String waterFogColor;
-        private String skyColor;
+        private int fogColor;
+        private int waterColor;
+        private int waterFogColor;
+        private int skyColor;
 
-        private String foliageColor;
-        private String grassColor;
+        private int foliageColor;
+        private int grassColor;
 
         private ParticleRenderer particleRenderer;
+
+        /**
+         * Formats a hexadecimal color string by removing the leading '#' if present.
+         * This method is used to ensure that the color strings are in the correct format for parsing.
+         *
+         * @param color the color string to format
+         * @return the formatted color string
+         * @version 0.0.1
+         */
+        @AsOf("0.0.1")
+        private String formatHex(@NotNull String color) {
+            if (color.startsWith("#")) color = color.substring(1);
+            return color;
+        }
 
         /**
          * This method sets the BiomeResourceKey property of the CustomBiome.
@@ -200,7 +200,20 @@ public final class CustomBiome {
          */
         @AsOf("0.0.1")
         public @NotNull Builder fogColor(@NotNull String fogColor) {
-            this.fogColor = fogColor;
+            this.fogColor = Integer.parseInt(formatHex(fogColor), 16);
+            return this;
+        }
+
+        /**
+         * This method sets the fog color property of the CustomBiome.
+         *
+         * @param fogColor The fog color of the custom biome.
+         * @version 0.0.1
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder fogColor(@NotNull Color fogColor) {
+            this.fogColor = fogColor.asRGB();
             return this;
         }
 
@@ -213,7 +226,20 @@ public final class CustomBiome {
          */
         @AsOf("0.0.1")
         public @NotNull Builder waterColor(@NotNull String waterColor) {
-            this.waterColor = waterColor;
+            this.waterColor = Integer.parseInt(formatHex(waterColor), 16);
+            return this;
+        }
+
+        /**
+         * This method sets the water color property of the CustomBiome.
+         *
+         * @param waterColor The water color of the custom biome.
+         * @version 0.0.1
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder waterColor(@NotNull Color waterColor) {
+            this.waterColor = waterColor.asRGB();
             return this;
         }
 
@@ -226,7 +252,33 @@ public final class CustomBiome {
          */
         @AsOf("0.0.1")
         public @NotNull Builder waterFogColor(@NotNull String waterFogColor) {
-            this.waterFogColor = waterFogColor;
+            this.waterFogColor = Integer.parseInt(formatHex(waterFogColor), 16);
+            return this;
+        }
+
+        /**
+         * This method sets the water fog color property of the CustomBiome.
+         *
+         * @param waterFogColor The water fog color of the custom biome.
+         * @version 0.0.1
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder waterFogColor(@NotNull Color waterFogColor) {
+            this.waterFogColor = waterFogColor.asRGB();
+            return this;
+        }
+
+        /**
+         * This method sets the sky color property of the CustomBiome.
+         *
+         * @param skyColor The sky color of the custom biome.
+         * @version 0.1.0
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder skyColor(@NotNull String skyColor) {
+            this.skyColor = Integer.parseInt(formatHex(skyColor), 16);
             return this;
         }
 
@@ -238,8 +290,21 @@ public final class CustomBiome {
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder skyColor(@NotNull String skyColor) {
-            this.skyColor = skyColor;
+        public @NotNull Builder skyColor(@NotNull Color skyColor) {
+            this.skyColor = skyColor.asRGB();
+            return this;
+        }
+
+        /**
+         * This method sets the foliage color property of the CustomBiome.
+         *
+         * @param foliageColor The foliage color of the custom biome.
+         * @version 0.1.0
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder foliageColor(@NotNull String foliageColor) {
+            this.foliageColor = Integer.parseInt(formatHex(foliageColor), 16);
             return this;
         }
 
@@ -251,8 +316,21 @@ public final class CustomBiome {
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder foliageColor(@NotNull String foliageColor) {
-            this.foliageColor = foliageColor;
+        public @NotNull Builder foliageColor(@NotNull Color foliageColor) {
+            this.foliageColor = foliageColor.asRGB();
+            return this;
+        }
+
+        /**
+         * This method sets the grass color property of the CustomBiome.
+         *
+         * @param grassColor The grass color of the custom biome.
+         * @version 0.1.0
+         * @return The Builder object, for chaining method calls.
+         */
+        @AsOf("0.0.1")
+        public @NotNull Builder grassColor(@NotNull String grassColor) {
+            this.grassColor = Integer.parseInt(formatHex(grassColor), 16);
             return this;
         }
 
@@ -264,8 +342,8 @@ public final class CustomBiome {
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder grassColor(@NotNull String grassColor) {
-            this.grassColor = grassColor;
+        public @NotNull Builder grassColor(@NotNull Color grassColor) {
+            this.grassColor = grassColor.asRGB();
             return this;
         }
 

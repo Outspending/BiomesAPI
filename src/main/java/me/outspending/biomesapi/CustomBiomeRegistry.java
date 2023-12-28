@@ -7,6 +7,7 @@ import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.*;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -30,11 +31,15 @@ public class CustomBiomeRegistry implements BiomeRegistry {
      */
     @Override
     @AsOf("0.0.1")
+    @SuppressWarnings("unchecked")
     public void register(@NotNull CustomBiome biome) {
+        // Initialize the NMS handler, If it is not initialized yet. If it is, this method does nothing.
+        NMSHandler.init();
+
         BiomeLock.unlock(() -> {
             // Retrieve the biome registry from NMS
             NMS nms = NMSHandler.getNMS().orElseThrow(() -> new UnknownNMSVersionException("Unknown NMS version"));
-            Registry<Biome> registry = nms.getRegistry();
+            Registry<Biome> registry = (Registry<Biome>) nms.getRegistry();
 
             // Get the ResourceLocation and BiomeSettings from the CustomBiome object
             ResourceLocation resourceLocation = biome.getResourceKey().resourceLocation();
@@ -73,7 +78,6 @@ public class CustomBiomeRegistry implements BiomeRegistry {
 
             // Add the custom biome to the list of registered biomes
             BiomeHandler.getRegisteredBiomes().add(biome);
-
             return null;
         });
     }

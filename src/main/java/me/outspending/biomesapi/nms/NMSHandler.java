@@ -34,8 +34,9 @@ public class NMSHandler {
      */
     @AsOf("0.0.1")
     public static void init() {
+        if (isNMSLoaded()) return;
+
         String version = Bukkit.getMinecraftVersion();
-        
         switch (version) {
             // case "1.19", "1.19.1", "1.19.2" -> NMS_VERSION = new NMS_v1_19_R1();         1.19_R1 is not supported anymore
             case "1.19.3" -> NMS_VERSION = new NMS_v1_19_R2();

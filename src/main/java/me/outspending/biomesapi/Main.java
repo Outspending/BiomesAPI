@@ -3,6 +3,8 @@ package me.outspending.biomesapi;
 import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -13,18 +15,17 @@ public class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        NMSHandler.init(); // Initialize NMS
-
         CustomBiome biome = CustomBiome.builder()
                 .resourceKey(BiomeResourceKey.of("test", "custombiome"))
-                .particleRenderer(ParticleRenderer.defaultSettings())
                 .settings(BiomeSettings.defaultSettings())
-                .fogColor("#db4929")
-                .foliageColor("#22c1c8")
-                .skyColor("#c8227d")
-                .waterColor("#c82222")
-                .waterFogColor("#b9de2e")
-                .grassColor("#40df8b")
+
+                .fogColor(Color.fromRGB(95, 95, 95))
+                .foliageColor(Color.fromRGB(192, 233, 145))
+                .skyColor(Color.fromRGB(177, 245, 238))
+                .waterColor(Color.fromRGB(246, 133, 212))
+                .waterFogColor(Color.fromRGB(245, 177, 224))
+                .grassColor(Color.fromRGB(140, 246, 133))
+
                 .build();
 
         // Register the newly created biome
@@ -43,7 +44,11 @@ public class Main extends JavaPlugin implements Listener {
 
         Chunk chunk = e.getBlock().getChunk();
 
-        BiomeSetter.setChunkBiome(chunk, biome, true);
+        Location loc = e.getBlock().getLocation();
+        Location loc1 = loc.clone().add(50, 50, 50);
+        Location loc2 = loc.clone().add(-50, -50, -50);
+
+        BiomeSetter.setRegionBiome(loc1, loc2, biome, true);
     }
 
 }

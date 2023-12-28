@@ -1,7 +1,5 @@
 package me.outspending.biomesapi.nms;
 
-import net.minecraft.core.Registry;
-import net.minecraft.world.level.biome.Biome;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -82,6 +80,6 @@ public interface NMS {
      * @return The biome registry from the Minecraft server.
      * @throws RuntimeException if the biome registry cannot be retrieved.
      */
-    @NotNull Registry<Biome> getRegistry();
+    @NotNull Object getRegistry();
 
 }
