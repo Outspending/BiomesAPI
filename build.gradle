@@ -17,6 +17,9 @@ allprojects {
         options.encoding = 'UTF-8'
     }
 
+    // The file for publication.
+    def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
+
     publishing {
         publications {
             create('maven', MavenPublication) {
@@ -47,9 +50,6 @@ allprojects {
     }
 
 }
-
-// The file for publication.
-def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
 
 subprojects {
 
