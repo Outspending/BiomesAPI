@@ -1,62 +1,91 @@
-# BiomesAPI
-[![Rust](https://github.com/Outspending/BiomesAPI/actions/workflows/gradle.yml/badge.svg)](https://github.com/Outspending/BiomesAPI/actions/workflows/gradle.yml)
+<div align="center">
+    <h1>BiomesAPI</h1>
+    <p>Custom Biomes!</p>
+    <img src="https://img.shields.io/github/last-commit/Outspending/BiomesAPI">
+    <img src="https://img.shields.io/github/contributors/Outspending/BiomesAPI">
+    <img src="https://img.shields.io/github/forks/Outspending/BiomesAPI">
+    <img src="https://img.shields.io/github/stars/Outspending/BiomesAPI">
+</div>
 
-BiomesAPI is an open-source library, empowers developers to effortlessly craft custom biomes within PaperMC or Spigot software, ensuring a seamless integration without the need for server restarts.
+<div align="center">
+    <img src="https://github.com/Outspending/BiomesAPI/actions/workflows/gradle.yml/badge.svg">
+</div>
 
-BiomesAPI provides a plethora of reliable and up-to-date APIs, allowing you to tailor biomes to your exact specifications.
+---
 
-## Installation
-To integrate BiomesAPI, locate the latest version in the [releases](https://github.com/Outspending/BiomesAPI/releases) section and follow these simple steps:
-1. Add BiomesAPI to your project's build path.
+BiomesAPI is a dependable Custom Biomes API for **Spigot 1.19.3+**. This API allows you to create the biomes of your dreams! BiomesAPI is easy to use and user-friendly.
 
-```xml
-<dependency>
-    <groupId>com.github.outspending</groupId>
-    <artifactId>biomesapi</artifactId>
-    <version>VERSION</version>
-</dependency>
-```
+BiomesAPI was made for servers who are looking for more of an aesthetic feel to their builds.
 
+## Release Notes 📃
+Check out the more detailed release notes [HERE](https://github.com/Outspending/BiomesAPI/blob/main/RELEASE_NOTES.md)
+
+
+## Installation ⭐
+Installing BiomesAPI is easy! Just follow these steps, and you'll be on your way to creating your own custom biomes!
+1. Find the latest version of BiomesAPI [HERE](https://github.com/Outspending/BiomesAPI/releases)
+2. Add the repository to your `build.gradle` file
 ```groovy
-dependencies {
-    implementation 'com.github.outspending:biomesapi:VERSION'
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 ```
+3. Add the dependency to your `build.gradle` file
+```groovy
+dependencies {
+        implementation 'com.github.Outspending:BiomesAPI:VERSION'
+}
+```
+4. Build your project
+5. All done!
 
-2. Reload your project's dependencies.
+Now you can use our API to create your own custom biomes!
 
-And that's it! You've successfully added BiomesAPI into your project!
+## Wiki 🧑‍💻
+Our Wiki is a great place to learn how to use BiomesAPI. This Wiki is updated frequently to make sure our users know how to use our API.
 
-### Nightly Builds
-For more information about Nightly builds please visit [this](https://github.com/Outspending/BiomesAPI/wiki/Nightly-Builds).
+The wiki has everything from how to create a biome to how to use our API to its full potential. It's also pretty descriptive, so you'll know exactly what you're doing.
 
-## Usage
-Explore helpful examples to kickstart your BiomesAPI journey [here](https://github.com/Outspending/BiomesAPI/wiki).
+Check out the Wiki [HERE](https://github.com/Outspending/BiomesAPI/wiki)
 
-## Why BiomesAPI
-BiomesAPI stands out as an effortlessly simple and lightweight API, allowing the creation of custom biomes without server restarts, ensuring optimal performance.
+## Why BiomesAPI 🤔
+BiomesAPI is the best way to create custom biomes for free, and it's easy to use! We also offer a Plugin and Skript addon for people who don't know how to use Java.
 
-## Advantages and Disadvantages
+BiomesAPI is a light-weight API and is pretty small in size. This API is also very fast and efficient, so you don't have to worry about lag. And is updated frequently to make sure it's up-to-date with the latest version of Spigot.
+
+## Advantages & Disadvantages 👌
+
 ### Advantages
-- User-friendly
-- Lightweight
-- Reliable
-- Up-to-date
-- Open-source
+- Easy to use
+- Light-weight
+- Fast and efficient
+- Updated frequently
 - Free
-- Server-friendly operation without restarts
+- Plugin and Skript addon
+- Well Documented Wiki
 
 ### Disadvantages
-- Exclusive compatibility with PaperMC and Spigot
-- Compatible only with 1.19+
-- Requires Java 16+
+- Only works on Spigot 1.19.3+
 
-## Credits
-- [SpigotMC](https://www.spigotmc.org/) - Assistance with code development.
-- [Lombok](https://projectlombok.org/) - Simplifying development tasks.
+## Credits 🙏
+Thanks to all of these people for helping make BiomesAPI possible!
 
-## Contributing
-Refer to our [contributing guidelines](CONTRIBUTING.md). All work-in-progress features are in the development branch.
+- [SpigotMC](https://www.spigotmc.org/) - For making Spigot and allowing us to use their API
+- [Jitpack](https://jitpack.io/) - For allowing us to use their repository
+- [Gradle](https://gradle.org/) - For allowing us to use their build tool
+- [GitHub](https://github.com/) - For hosting our code
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) - For allowing us to use their IDE
+- [Lombok](https://projectlombok.org/) - For allowing us to use their library
 
-## License
-BiomesAPI is licensed under the [GNU-3.0 License](LICENSE).
+## Contributing 📰
+
+> [!WARNING]
+> If you do not follow our conventions, your pull request will be denied.
+
+If you are looking to contribute to BiomesAPI, please read our [CONTRIBUTING.md](CONTRIBUTING.md) file before doing so.
+
+This file will tell you everything about our conventions and how to contribute to BiomesAPI.
+
+## License 🪪
+BiomesAPI is licensed under the [GPL-3.0 License](LICENSE)
