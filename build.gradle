@@ -47,11 +47,11 @@ subprojects {
     publishing {
         publications {
             create('maven', MavenPublication) {
-                groupId = 'com.github.Outspending'
-
+                groupId = it.groupId
+                artifactId = it.name
+                version = it.version
+                
                 artifact buildFile
-
-                artifactId = 'BiomesAPI'
                 from components.java
             }
         }
