@@ -98,4 +98,7 @@ dependencies {
         implementation project(path: ":BiomesAPI-${version}", configuration: 'reobf')
     }
 
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
 }
