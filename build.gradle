@@ -88,13 +88,13 @@ repositories {
 }
 
 // NMS Versions
-def biomesApiVersions = ["1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3"]
+def biomesNMSVersions = ["1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3"]
 
 dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
     implementation project(':BiomesAPI-NMS')
-    biomesApiVersions.each { version ->
+    biomesNMSVersions.each { version ->
         implementation project(path: ":BiomesAPI-${version}", configuration: 'reobf')
     }
 
