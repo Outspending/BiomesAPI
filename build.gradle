@@ -6,14 +6,70 @@ plugins {
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
-sourceCompatibility = 17
-targetCompatibility = 17
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+
+    sourceCompatibility = 17
+    targetCompatibility = 17
+
+    // The file for publication.
+    def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = "papermc-repo"
+            url = "https://repo.papermc.io/repository/maven-public/"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/groups/public/"
+        }
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    }
+
+    publishing {
+        publications {
+            create('maven', MavenPublication) {
+                groupId = 'com.github.Outspending'
+
+                artifact buildFile
+
+                artifactId = 'BiomesAPI'
+                from components.java
+            }
+        }
+    }
+
+    publishMavenPublicationToMavenLocal {
+        // Throws an error if we don't explicitly say we're using the output
+        // of reobfJar in the final build.
+        dependsOn(reobfJar)
+    }
+
+    reobfJar {
+        // Make sure it's the correct name for when it's inserted into the publication
+        outputJar.set(buildFile)
+    }
+
+    wrapper {
+        gradleVersion = '8.1.1'
+        distributionType = Wrapper.DistributionType.ALL
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+}
 
 group = 'com.github.Outspending'
 version = '0.0.1'
-
-// The file for publication.
-def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
 
 repositories {
     mavenCentral()
@@ -41,41 +97,4 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-}
-
-//tasks.assemble {
-//    dependsOn(reobfJar)
-//}
-
-publishing {
-    publications {
-        create('maven', MavenPublication) {
-            groupId = 'com.github.Outspending'
-
-            artifact buildFile
-
-            artifactId = 'BiomesAPI'
-            from components.java
-        }
-    }
-}
-
-publishMavenPublicationToMavenLocal {
-    // Throws an error if we don't explicitly say we're using the output
-    // of reobfJar in the final build.
-    dependsOn(reobfJar)
-}
-
-reobfJar {
-    // Make sure it's the correct name for when it's inserted into the publication
-    outputJar.set(buildFile)
-}
-
-wrapper {
-    gradleVersion = '8.1.1'
-    distributionType = Wrapper.DistributionType.ALL
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
 }
