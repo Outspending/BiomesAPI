@@ -6,15 +6,26 @@ plugins {
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
+allprojects {
+
+    group = 'com.github.Outspending'
+    version = '0.0.1'
 
     sourceCompatibility = 17
     targetCompatibility = 17
 
-    // The file for publication.
-    def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+}
+
+// The file for publication.
+def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
 
     repositories {
         mavenCentral()
@@ -62,14 +73,7 @@ subprojects {
         distributionType = Wrapper.DistributionType.ALL
     }
 
-    tasks.withType(JavaCompile) {
-        options.encoding = 'UTF-8'
-    }
-
 }
-
-group = 'com.github.Outspending'
-version = '0.0.1'
 
 repositories {
     mavenCentral()
@@ -90,11 +94,8 @@ dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
     implementation project(':BiomesAPI-NMS')
-
     biomesApiVersions.each { version ->
         implementation project(path: ":BiomesAPI-${version}", configuration: 'reobf')
     }
 
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }

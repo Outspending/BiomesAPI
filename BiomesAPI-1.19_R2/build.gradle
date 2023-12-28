@@ -1,28 +1,8 @@
 plugins {
-    id 'java'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
-}
-
-group = 'com.github.Outspending'
-version = '0.0.1'
-
-repositories {
-    mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
-    maven {
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/groups/public/"
-    }
 }
 
 dependencies {
     paperweight.paperDevBundle('1.19.3-R0.1-SNAPSHOT')
-
     implementation project(':BiomesAPI-NMS')
-
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
