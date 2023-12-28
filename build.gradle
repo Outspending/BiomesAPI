@@ -9,8 +9,11 @@ plugins {
 sourceCompatibility = 17
 targetCompatibility = 17
 
-group = 'com.github.outspending'
+group = 'com.github.Outspending'
 version = '0.0.1'
+
+// The file for publication.
+def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
 
 repositories {
     mavenCentral()
@@ -41,14 +44,32 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
+tasks.assemble {
+    dependsOn(reobfJar)
+}
+
 publishing {
     publications {
         create('maven', MavenPublication) {
-            groupId = 'com.github.outspending'
+            groupId = 'com.github.Outspending'
+
+            artifact buildFile
+
             artifactId = 'BiomesAPI'
             from components.java
         }
     }
+}
+
+publishMavenPublicationToMavenLocal {
+    // Throws an error if we don't explicitly say we're using the output
+    // of reobfJar in the final build.
+    dependsOn(reobfJar)
+}
+
+reobfJar {
+    // Make sure it's the correct name for when it's inserted into the publication
+    outputJar.set(buildFile)
 }
 
 wrapper {
@@ -59,7 +80,3 @@ wrapper {
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
-
-// shadowJar {
-//     destinationDirectory = file("/home/Josh/Servers/TestServer/plugins/");
-// }
