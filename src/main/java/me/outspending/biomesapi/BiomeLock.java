@@ -4,9 +4,6 @@ import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.nms.NMS;
 import me.outspending.biomesapi.nms.NMSHandler;
-import net.minecraft.core.MappedRegistry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.world.level.biome.Biome;
 
 import java.util.Optional;
 import java.util.function.Supplier;

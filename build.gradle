@@ -2,7 +2,6 @@ plugins {
     id 'java'
     id 'maven-publish'
 
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
@@ -28,11 +27,11 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT");
+    paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
     implementation project(':BiomesAPI-NMS')
 
-    implementation project(":BiomesAPI-1.19_R1")
+    // implementation project(":BiomesAPI-1.19_R1")        1.19_R1 is not supported anymore
     implementation project(":BiomesAPI-1.19_R2")
     implementation project(":BiomesAPI-1.19_R3")
 

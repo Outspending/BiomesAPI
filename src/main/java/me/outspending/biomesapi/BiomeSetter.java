@@ -2,12 +2,12 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.misc.PointRange2D;
+import me.outspending.biomesapi.misc.PointRange3D;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,8 +21,8 @@ import org.jetbrains.annotations.NotNull;
 @AsOf("0.0.1")
 public final class BiomeSetter {
 
+    @SuppressWarnings("deprecation")
     private static final UnsafeValues UNSAFE = Bukkit.getUnsafe();
-
 
     private static final int MAX_HEIGHT = 320;
     private static final int MIN_HEIGHT = -64;
@@ -203,7 +203,7 @@ public final class BiomeSetter {
     @AsOf("0.0.1")
     public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
         if (from.getWorld().equals(to.getWorld())) {
-            setRegionBiome(from.getWorld(), from.toVector(), to.toVector(), customBiome, updateBiome);
+            setRegionBiome(from.getWorld(), from, to, customBiome, updateBiome);
             return;
         }
 
@@ -221,7 +221,7 @@ public final class BiomeSetter {
      */
     @AsOf("0.0.1")
     public static void setRegionBiome(@NotNull World world, @NotNull Vector from, @NotNull Vector to, @NotNull CustomBiome customBiome) {
-        setRegionBiome(world, from, to, customBiome, false);
+        setRegionBiome(world, from.toLocation(world), to.toLocation(world), customBiome, false);
     }
 
     /**
@@ -240,30 +240,22 @@ public final class BiomeSetter {
     @AsOf("0.0.1")
     public static void setRegionBiome(
             @NotNull World world,
-            @NotNull Vector from,
-            @NotNull Vector to,
+            @NotNull Location from,
+            @NotNull Location to,
             @NotNull CustomBiome customBiome,
             boolean updateBiome
     ) {
         RegionAccessor accessor = getRegionAccessor(from.toLocation(world));
         NamespacedKey key = customBiome.toNamespacedKey();
+        PointRange3D range = PointRange3D.of(from, to);
 
-        int minX = Math.min(from.getBlockX(), to.getBlockX());
-        int maxX = Math.max(from.getBlockX(), to.getBlockX());
-
-        int minY = Math.min(from.getBlockY(), to.getBlockY());
-        int maxY = Math.max(from.getBlockY(), to.getBlockY());
-
-        int minZ = Math.min(from.getBlockZ(), to.getBlockZ());
-        int maxZ = Math.max(from.getBlockZ(), to.getBlockZ());
-
-        int minHeight = Math.max(minY, MIN_HEIGHT);
-        int maxHeight = Math.min(maxY, MAX_HEIGHT);
+        int minHeight = Math.max(range.minY(), MIN_HEIGHT);
+        int maxHeight = Math.min(range.maxY(), MAX_HEIGHT);
 
         // Iterate over the blocks in the region
-        for (int x = minX; x <= maxX; x++) {
+        for (int x = range.minX(); x <= range.maxX(); x++) {
             for (int y = minHeight; y <= maxHeight; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
+                for (int z = range.minZ(); z <= range.maxZ(); z++) {
                     // Set the biome of each block to the custom biome
                     UNSAFE.setBiomeKey(accessor, x, y, z, key);
                 }
@@ -271,7 +263,7 @@ public final class BiomeSetter {
         }
 
         if (updateBiome) {
-            BiomeUpdater.updateChunks(from.toLocation(world), to.toLocation(world));
+            BiomeUpdater.updateChunks(from, to);
         }
     }
 

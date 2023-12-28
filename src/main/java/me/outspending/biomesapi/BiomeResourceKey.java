@@ -1,6 +1,5 @@
 package me.outspending.biomesapi;
 
-import lombok.Getter;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;

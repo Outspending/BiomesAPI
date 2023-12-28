@@ -17,6 +17,7 @@ import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -97,6 +98,23 @@ public class NMS_v1_20_R3 implements NMS {
         biomeRegistryLock(false);
         supplier.get();
         registry.freeze();
+    }
+
+    /**
+     * Retrieves the biome registry from the Minecraft server.
+     *
+     * This method gets the server instance from the Bukkit API, accesses the registry of the server,
+     * and retrieves the biome registry. If the biome registry cannot be retrieved, it throws a RuntimeException.
+     *
+     * @return The biome registry from the Minecraft server.
+     * @throws RuntimeException if the biome registry cannot be retrieved.
+     */
+    @Override
+    public @NotNull Registry<Biome> getRegistry() {
+        return ((CraftServer) Bukkit.getServer()).getServer()
+                .registryAccess()
+                .registry(Registries.BIOME)
+                .orElseThrow(() -> new RuntimeException("Could not retrieve biome registry"));
     }
 
 }
