@@ -1,12 +1,11 @@
 plugins {
-    id 'java'
-    id 'maven-publish'
-
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'io.papermc.paperweight.userdev' version '1.5.11'
 }
 
 allprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
 
     group = 'com.github.Outspending'
     version = '0.0.1'
@@ -18,39 +17,13 @@ allprojects {
         options.encoding = 'UTF-8'
     }
 
-}
-
-// The file for publication.
-def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
-
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
-
-    repositories {
-        mavenCentral()
-        maven {
-            name = "papermc-repo"
-            url = "https://repo.papermc.io/repository/maven-public/"
-        }
-        maven {
-            name = "sonatype"
-            url = "https://oss.sonatype.org/content/groups/public/"
-        }
-    }
-
-    dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.30'
-        annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    }
-
     publishing {
         publications {
             create('maven', MavenPublication) {
                 groupId = it.groupId
                 artifactId = it.name
                 version = it.version
-                
+
                 artifact buildFile
                 from components.java
             }
@@ -71,6 +44,30 @@ subprojects {
     wrapper {
         gradleVersion = '8.1.1'
         distributionType = Wrapper.DistributionType.ALL
+    }
+
+}
+
+// The file for publication.
+def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
+
+subprojects {
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = "papermc-repo"
+            url = "https://repo.papermc.io/repository/maven-public/"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/groups/public/"
+        }
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
     }
 
 }
