@@ -2,6 +2,7 @@ package me.outspending.biomesapi.misc;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -32,6 +33,32 @@ public record PointRange3D(int minX, int maxX, int minY, int maxY, int minZ, int
                 Math.min(from.getBlockZ(), to.getBlockZ()),
                 Math.max(from.getBlockZ(), to.getBlockZ())
         );
+    }
+
+    /**
+     * Returns the minimum location within the range.
+     * The minimum location is defined by the minimum X, Y and Z coordinates.
+     *
+     * @param world The world in which the location is.
+     * @return The minimum location within the range.
+     * @version 0.0.1
+     */
+    @AsOf("0.0.2")
+    public @NotNull Location getMinLocation(@NotNull World world) {
+        return new Location(world, minX, minY, minZ);
+    }
+
+    /**
+     * Returns the maximum location within the range.
+     * The maximum location is defined by the maximum X, Y and Z coordinates.
+     *
+     * @param world The world in which the location is.
+     * @return The maximum location within the range.
+     * @version 0.0.1
+     */
+    @AsOf("0.0.2")
+    public @NotNull Location getMaxLocation(@NotNull World world) {
+        return new Location(world, maxX, maxY, maxZ);
     }
 
 }

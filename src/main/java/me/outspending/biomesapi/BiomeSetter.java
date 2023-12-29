@@ -2,13 +2,16 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
-import me.outspending.biomesapi.misc.PointRange2D;
 import me.outspending.biomesapi.misc.PointRange3D;
+import me.outspending.biomesapi.nms.NMS;
+import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 /**
  * This utility class provides methods to set the biome of blocks, chunks, and regions in the game.
@@ -257,7 +260,7 @@ public final class BiomeSetter {
      * @param to The ending vector of the region.
      * @param customBiome The custom biome to set for the region.
      * @param updateBiome A flag indicating whether to update the biome of the region immediately.
-     * @version 0.0.1
+     * @version 0.0.2
      */
     @AsOf("0.0.1")
     public static void setRegionBiome(
@@ -267,26 +270,28 @@ public final class BiomeSetter {
             @NotNull CustomBiome customBiome,
             boolean updateBiome
     ) {
-        RegionAccessor accessor = getRegionAccessor(from.toLocation(world));
         NamespacedKey key = customBiome.toNamespacedKey();
         PointRange3D range = PointRange3D.of(from, to);
 
-        int minHeight = Math.max(range.minY(), MIN_HEIGHT);
-        int maxHeight = Math.min(range.maxY(), MAX_HEIGHT);
-
-        // Iterate over the blocks in the region
-        for (int x = range.minX(); x <= range.maxX(); x++) {
-            for (int y = minHeight; y <= maxHeight; y++) {
-                for (int z = range.minZ(); z <= range.maxZ(); z++) {
-                    // Set the biome of each block to the custom biome
-                    UNSAFE.setBiomeKey(accessor, x, y, z, key);
-                }
-            }
-        }
+        Optional<NMS> nms = NMSHandler.getNMS();
+        nms.ifPresent(n -> n.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), key.getNamespace(), key.getKey()));
 
         if (updateBiome) {
             BiomeUpdater.updateChunks(from, to);
         }
+//        int minHeight = Math.max(range.minY(), MIN_HEIGHT);
+//        int maxHeight = Math.min(range.maxY(), MAX_HEIGHT);
+//
+//        // Iterate over the blocks in the region
+//        for (int x = range.minX(); x <= range.maxX(); x++) {
+//            for (int y = minHeight; y <= maxHeight; y++) {
+//                for (int z = range.minZ(); z <= range.maxZ(); z++) {
+//                    // Set the biome of each block to the custom biome
+//                    UNSAFE.setBiomeKey(accessor, x, y, z, key);
+//                }
+//            }
+//        }
+
     }
 
 }

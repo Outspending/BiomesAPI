@@ -1,10 +1,13 @@
 package me.outspending.biomesapi.nms;
 
+import com.google.common.base.Preconditions;
+import net.minecraft.core.Holder;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -12,6 +15,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.v1_20_R2.CraftChunk;
 import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_20_R2.entity.CraftPlayer;
@@ -114,6 +119,29 @@ public class NMS_v1_20_R2 implements NMS {
                 .registryAccess()
                 .registry(Registries.BIOME)
                 .orElseThrow(() -> new RuntimeException("Could not retrieve biome registry"));
+    }
+
+    @Override
+    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path) {
+        CompletableFuture.runAsync(() -> {
+
+            ResourceKey<Biome> biomeKey = ResourceKey.create(Registries.BIOME, new ResourceLocation(key, path));
+            Biome biome = getRegistry().get(biomeKey);
+
+            Preconditions.checkArgument(biome != null, "Biome with key " + key + ":" + path + " does not exist");
+
+            for (int x = minLoc.getBlockX(); x <= maxLoc.getBlockX(); x++) {
+                for (int y = minLoc.getBlockY(); y <= maxLoc.getBlockY(); y++) {
+                    for (int z = minLoc.getBlockZ(); z <= maxLoc.getBlockZ(); z++) {
+                        Chunk chunk = minLoc.getWorld().getChunkAt(x, z);
+                        LevelChunk levelChunk = (LevelChunk) ((CraftChunk) chunk).getHandle(ChunkStatus.BIOMES);
+
+                        levelChunk.setBiome(x, y, z, Holder.direct(biome));
+                    }
+                }
+            }
+
+        });
     }
 
 }

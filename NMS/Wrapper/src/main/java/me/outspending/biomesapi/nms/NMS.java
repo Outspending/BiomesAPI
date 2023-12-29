@@ -1,9 +1,6 @@
 package me.outspending.biomesapi.nms;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,5 +78,7 @@ public interface NMS {
      * @throws RuntimeException if the biome registry cannot be retrieved.
      */
     @NotNull Object getRegistry();
+
+    void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path);
 
 }

@@ -5,8 +5,6 @@ plugins {
     java
 }
 
-
-
 allprojects {
     apply(plugin = "java")
     apply(plugin = "maven-publish")
@@ -14,8 +12,6 @@ allprojects {
 
     group = "com.github.Outspending"
     version = "0.0.1"
-
-
 
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
@@ -97,9 +93,7 @@ allprojects {
     }
 }
 
-
 val nmsVersions = listOf("1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3")
-
 dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 

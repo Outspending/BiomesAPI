@@ -11,6 +11,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_19_R2.CraftChunk;
 import org.bukkit.craftbukkit.v1_19_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_19_R2.entity.CraftPlayer;
@@ -113,6 +114,11 @@ public class NMS_v1_19_R2 implements NMS {
                 .registryAccess()
                 .registry(Registries.BIOME)
                 .orElseThrow(() -> new RuntimeException("Could not retrieve biome registry"));
+    }
+
+    @Override
+    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path) {
+
     }
 
 }
