@@ -80,7 +80,7 @@ dependencies {
 
     implementation project(':NMS:Wrapper')
     biomesNMSVersions.each { version ->
-        implementation project(":BiomesAPI-${version}")
+        implementation project(":NMS:${version}")
     }
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
