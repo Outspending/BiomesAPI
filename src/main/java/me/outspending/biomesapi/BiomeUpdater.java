@@ -1,10 +1,7 @@
 package me.outspending.biomesapi;
 
-import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.misc.PointRange2D;
-import me.outspending.biomesapi.nms.NMS;
-import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -13,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Utility class for updating biomes in Minecraft.

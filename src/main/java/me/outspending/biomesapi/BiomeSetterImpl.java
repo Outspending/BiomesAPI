@@ -2,15 +2,12 @@ package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.misc.PointRange3D;
-import me.outspending.biomesapi.nms.NMS;
 import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Optional;
 
 public class BiomeSetterImpl implements BiomeSetter {
 
@@ -115,10 +112,11 @@ public class BiomeSetterImpl implements BiomeSetter {
 
     @Override
     public void setRegionBiome(@NotNull World world, @NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
-        PointRange3D range = PointRange3D.of(from, to);
-        Optional<NMS> nms = NMSHandler.getNMS();
+        NMSHandler.executeNMS(nms -> {
+            PointRange3D range = PointRange3D.of(from, to);
 
-        nms.ifPresent(n -> n.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), customBiome.toNamespacedKey()));
+            nms.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), customBiome.toNamespacedKey());
+        });
 
         if (updateBiome) {
             BIOME_UPDATER.updateChunks(from, to);

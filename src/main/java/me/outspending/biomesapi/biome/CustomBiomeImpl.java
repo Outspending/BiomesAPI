@@ -1,9 +1,9 @@
 package me.outspending.biomesapi.biome;
 
-import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.BiomeSettings;
-import me.outspending.biomesapi.renderer.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.registry.BiomeResourceKey;
+import me.outspending.biomesapi.renderer.ParticleRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.NotNull;
@@ -115,9 +115,8 @@ public final class CustomBiomeImpl implements CustomBiome {
         return grassColor;
     }
 
-    @NotNull
     @Override
-    public ParticleRenderer getParticleRenderer() {
+    public @NotNull ParticleRenderer getParticleRenderer() {
         return particleRenderer;
     }
 

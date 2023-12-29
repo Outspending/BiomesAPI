@@ -1,11 +1,8 @@
 package me.outspending.biomesapi;
 
-import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
-import me.outspending.biomesapi.nms.NMS;
 import me.outspending.biomesapi.nms.NMSHandler;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -16,8 +13,7 @@ import java.util.function.Supplier;
  * @version 0.0.1
  */
 @AsOf("0.0.1")
-@UtilityClass
-public final class BiomeLock {
+public interface BiomeLock {
 
     /**
      * Unlocks the biome registry, performs an operation, and then locks the biome registry again.
@@ -37,9 +33,7 @@ public final class BiomeLock {
      */
     @AsOf("0.0.1")
     static void unlock(Supplier<?> supplier) {
-        Optional<NMS> nms = NMSHandler.getNMS();
-
-        nms.ifPresent(nmsInstance -> nmsInstance.unlockRegistry(supplier));
+        NMSHandler.executeNMS(nms -> nms.unlockRegistry(supplier));
     }
 
     /**
@@ -56,9 +50,7 @@ public final class BiomeLock {
      */
     @AsOf("0.0.1")
     static void changeRegistryLock(boolean isLocked) {
-        Optional<NMS> nms = NMSHandler.getNMS();
-
-        nms.ifPresent(nmsInstance -> nmsInstance.biomeRegistryLock(isLocked));
+        NMSHandler.executeNMS(nms -> nms.biomeRegistryLock(isLocked));
     }
 
 }

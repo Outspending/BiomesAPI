@@ -1,10 +1,10 @@
 package me.outspending.biomesapi.biome;
 
 import com.google.common.base.Preconditions;
-import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.BiomeSettings;
-import me.outspending.biomesapi.renderer.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.registry.BiomeResourceKey;
+import me.outspending.biomesapi.renderer.ParticleRenderer;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.NotNull;
