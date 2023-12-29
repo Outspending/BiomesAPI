@@ -67,19 +67,6 @@ public final class BiomeUpdater {
     }
 
     /**
-     * Updates the biome of a chunk within a certain distance.
-     * This method is a convenience method that calls the updateChunks method with a list containing the chunk and the specified distance.
-     *
-     * @param chunk The chunk to update.
-     * @param distance The distance.
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public static void updateChunk(@NotNull Chunk chunk, int distance) {
-        updateChunks(List.of(chunk));
-    }
-
-    /**
      * Updates the biomes of the chunks between two locations.
      * This method is a convenience method that calls the updateChunks method with the chunks between the 'from' and 'to' locations.
      *
