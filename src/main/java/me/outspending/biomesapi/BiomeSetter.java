@@ -183,7 +183,7 @@ public final class BiomeSetter {
     @AsOf("0.0.1")
     public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome) {
         if (from.getWorld().equals(to.getWorld())) {
-            setRegionBiome(from.getWorld(), from.toVector(), to.toVector(), customBiome);
+            setRegionBiome(from.getWorld(), from, to, customBiome, true);
             return;
         }
 
@@ -221,7 +221,29 @@ public final class BiomeSetter {
      */
     @AsOf("0.0.1")
     public static void setRegionBiome(@NotNull World world, @NotNull Vector from, @NotNull Vector to, @NotNull CustomBiome customBiome) {
-        setRegionBiome(world, from.toLocation(world), to.toLocation(world), customBiome, false);
+        setRegionBiome(world, from, to, customBiome, false);
+    }
+
+    /**
+     * Sets the biome of a region to a custom biome.
+     * This method is a convenience method that calls the setRegionBiome method with the 'updateBiome' flag set to false.
+     *
+     * @param world the world
+     * @param from the starting vector
+     * @param to the ending vector
+     * @param customBiome the custom biome
+     * @param updateBiome a flag indicating whether to update the biome of the region immediately
+     * @version 0.0.1
+     */
+    @AsOf("0.0.2")
+    public static void setRegionBiome(
+            @NotNull World world,
+            @NotNull Vector from,
+            @NotNull Vector to,
+            @NotNull CustomBiome customBiome,
+            boolean updateBiome
+    ) {
+        setRegionBiome(world, from.toLocation(world), to.toLocation(world), customBiome, updateBiome);
     }
 
     /**

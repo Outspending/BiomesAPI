@@ -52,7 +52,6 @@ allprojects {
                     groupId = "com.github.Outspending"
                     artifactId = project.name
 
-
                     if (usesReobfuscatedJar()) artifact(reobfBuildFile)
                     from(components["java"])
                 }
