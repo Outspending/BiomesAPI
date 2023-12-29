@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import me.outspending.biomesapi.annotations.AsOf;
-import me.outspending.biomesapi.nms.NMSHandler;
 import net.minecraft.resources.ResourceLocation;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;

@@ -21,7 +21,6 @@ public enum BiomeTempModifier {
      *
      * @version 0.0.1
      */
-    @AsOf("0.0.1")
     NONE(Biome.TemperatureModifier.NONE),
 
     /**
@@ -30,7 +29,6 @@ public enum BiomeTempModifier {
      *
      * @version 0.0.1
      */
-    @AsOf("0.0.1")
     FROZEN(Biome.TemperatureModifier.FROZEN);
 
     /**
