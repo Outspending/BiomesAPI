@@ -1,7 +1,7 @@
 package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
-import org.jetbrains.annotations.Contract;
+import me.outspending.biomesapi.annotations.Experimental;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
  * @version 0.0.1
  */
 @AsOf("0.0.1")
-@FunctionalInterface
 public interface BiomeRegistry {
 
     /**
@@ -36,5 +35,9 @@ public interface BiomeRegistry {
      */
     @AsOf("0.0.1")
     void register(@NotNull CustomBiome biome);
+
+    @AsOf("0.0.2")
+    @Experimental
+    void unregister(@NotNull CustomBiome biome);
 
 }

@@ -24,6 +24,21 @@ public class NMSHandler {
     private static NMS NMS_VERSION;
 
     /**
+     * Static initializer for the NMSHandler class.
+     * This method is invoked when the class is loaded by the JVM.
+     * It initializes the NMS version based on the server's version.
+     * The server's version is retrieved from the package name of the server class.
+     * The version is then used in a switch statement to instantiate the appropriate NMS version.
+     * If the server's version is not supported, a RuntimeException is thrown.
+     *
+     * @throws RuntimeException if the server's version is not supported
+     * @version 0.0.2
+     */
+    static {
+        init();
+    }
+
+    /**
      * Initializes the NMS version based on the server's version.
      * The server's version is retrieved from the package name of the server class.
      * The version is then used in a switch statement to instantiate the appropriate NMS version.
@@ -33,7 +48,7 @@ public class NMSHandler {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void init() {
+    static void init() {
         if (isNMSLoaded()) return;
 
         String version = Bukkit.getMinecraftVersion();
