@@ -19,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @version 0.0.1
  */
-@UtilityClass
 @AsOf("0.0.1")
 public interface BiomeSetter {
 
