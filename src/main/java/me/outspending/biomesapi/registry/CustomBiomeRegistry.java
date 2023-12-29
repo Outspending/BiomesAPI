@@ -1,6 +1,10 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.registry;
 
+import me.outspending.biomesapi.BiomeLock;
+import me.outspending.biomesapi.BiomeSettings;
+import me.outspending.biomesapi.renderer.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.biome.BiomeHandler;
 import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.exceptions.UnknownNMSVersionException;
 import me.outspending.biomesapi.nms.NMS;

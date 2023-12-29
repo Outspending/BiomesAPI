@@ -1,4 +1,4 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.registry;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.resources.ResourceLocation;

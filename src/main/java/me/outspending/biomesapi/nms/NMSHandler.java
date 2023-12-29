@@ -4,8 +4,10 @@ import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownNMSVersionException;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Utility class for handling NMS (Net Minecraft Server) related operations.
@@ -53,7 +55,6 @@ public class NMSHandler {
 
         String version = Bukkit.getMinecraftVersion();
         switch (version) {
-            // case "1.19", "1.19.1", "1.19.2" -> NMS_VERSION = new NMS_v1_19_R1();         1.19_R1 is not supported anymore
             case "1.19.3" -> NMS_VERSION = new NMS_v1_19_R2();
             case "1.19.4" -> NMS_VERSION = new NMS_v1_19_R3();
             case "1.20", "1.20.1" -> NMS_VERSION = new NMS_v1_20_R1();
@@ -83,6 +84,17 @@ public class NMSHandler {
     @AsOf("0.0.1")
     public static Optional<NMS> getNMS() {
         return Optional.ofNullable(NMS_VERSION);
+    }
+
+    /**
+     * Executes the given consumer if the NMS version exists.
+     *
+     * @param consumer the consumer to execute
+     * @version 0.0.2
+     */
+    @AsOf("0.0.2")
+    public static void executeNMS(@NotNull Consumer<NMS> consumer) {
+        getNMS().ifPresent(consumer);
     }
 
 }

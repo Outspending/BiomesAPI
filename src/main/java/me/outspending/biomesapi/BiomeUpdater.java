@@ -8,6 +8,7 @@ import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -21,9 +22,20 @@ import java.util.Optional;
  *
  * @version 0.0.1
  */
-@UtilityClass
 @AsOf("0.0.1")
-public final class BiomeUpdater {
+public interface BiomeUpdater {
+
+    /**
+     * Returns an instance of BiomeUpdater.
+     * This method returns an instance of BiomeUpdaterImpl.
+     *
+     * @return an instance of BiomeUpdater.
+     * @version 0.0.2
+     */
+    @AsOf("0.0.2")
+    static @NotNull BiomeUpdater of() {
+        return new BiomeUpdaterImpl();
+    }
 
     /**
      * Returns a list of chunks between two locations.
@@ -36,7 +48,7 @@ public final class BiomeUpdater {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    private static @NotNull List<Chunk> getChunksBetweenLocations(@NotNull Location from, @NotNull Location to) {
+    default @NotNull List<Chunk> getChunksBetweenLocations(@NotNull Location from, @NotNull Location to) {
         if (!from.getWorld().equals(to.getWorld())) {
             throw new IllegalArgumentException("Locations must be in the same world.");
         }
@@ -62,9 +74,7 @@ public final class BiomeUpdater {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void updateChunk(@NotNull Chunk chunk) {
-        updateChunks(List.of(chunk));
-    }
+    void updateChunk(@NotNull Chunk chunk);
 
     /**
      * Updates the biomes of the chunks between two locations.
@@ -75,9 +85,8 @@ public final class BiomeUpdater {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void updateChunks(@NotNull Location from, @NotNull Location to) {
-        updateChunks(getChunksBetweenLocations(from, to));
-    }
+    @Contract("null, _ -> fail; _, null -> fail")
+    void updateChunks(Location from, Location to);
 
     /**
      * Updates the biomes of a list of chunks within a certain distance.
@@ -88,10 +97,6 @@ public final class BiomeUpdater {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void updateChunks(@NotNull List<Chunk> chunks) {
-        Optional<NMS> nms = NMSHandler.getNMS();
-
-        nms.ifPresent(nmsInstance -> nmsInstance.updateChunks(chunks));
-    }
+    void updateChunks(@NotNull List<Chunk> chunks);
 
 }

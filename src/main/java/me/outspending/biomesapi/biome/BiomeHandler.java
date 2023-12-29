@@ -1,11 +1,10 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.biome;
 
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
+import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.annotations.AsOf;
-import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
-import net.minecraft.world.level.biome.Biome;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

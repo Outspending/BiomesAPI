@@ -23,13 +23,7 @@ import java.util.Optional;
  */
 @UtilityClass
 @AsOf("0.0.1")
-public final class BiomeSetter {
-
-    @SuppressWarnings("deprecation")
-    private static final UnsafeValues UNSAFE = Bukkit.getUnsafe();
-
-    private static final int MAX_HEIGHT = 320;
-    private static final int MIN_HEIGHT = -64;
+public interface BiomeSetter {
 
     /**
      * Returns the RegionAccessor for the given location.
@@ -39,7 +33,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    private static @NotNull RegionAccessor getRegionAccessor(@NotNull Location location) {
+    default @NotNull RegionAccessor getRegionAccessor(@NotNull Location location) {
         return location.getWorld();
     }
 
@@ -51,9 +45,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome) {
-        setBlockBiome(block, customBiome, false);
-    }
+    void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome);
 
     /**
      * Sets the biome of a block to a custom biome.
@@ -67,16 +59,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome, boolean updateBiome) {
-        Location location = block.getLocation();
-        RegionAccessor accessor = getRegionAccessor(location);
-
-        UNSAFE.setBiomeKey(accessor, location.getBlockX(), location.getBlockY(), location.getBlockZ(), customBiome.toNamespacedKey());
-
-        if (updateBiome) {
-            BiomeUpdater.updateChunk(location.getChunk());
-        }
-    }
+    void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome, boolean updateBiome);
 
     /**
      * Sets the biome of a chunk to a custom biome.
@@ -86,9 +69,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setChunkBiome(@NotNull Chunk chunk, @NotNull CustomBiome customBiome) {
-        setChunkBiome(chunk, MIN_HEIGHT, MAX_HEIGHT, customBiome);
-    }
+    void setChunkBiome(@NotNull Chunk chunk, @NotNull CustomBiome customBiome);
 
     /**
      * Sets the biome of a chunk to a custom biome within the default height range.
@@ -101,9 +82,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setChunkBiome(@NotNull Chunk chunk, @NotNull CustomBiome customBiome, boolean updateBiome) {
-        setChunkBiome(chunk, MIN_HEIGHT, MAX_HEIGHT, customBiome, updateBiome);
-    }
+    void setChunkBiome(@NotNull Chunk chunk, @NotNull CustomBiome customBiome, boolean updateBiome);
 
     /**
      * Sets the biome of a chunk to a custom biome within a height range.
@@ -115,9 +94,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setChunkBiome(@NotNull Chunk chunk, int minHeight, int maxHeight, @NotNull CustomBiome customBiome) {
-        setChunkBiome(chunk, minHeight, maxHeight, customBiome, false);
-    }
+    void setChunkBiome(@NotNull Chunk chunk, int minHeight, int maxHeight, @NotNull CustomBiome customBiome);
 
    /**
      * Sets the biome of a chunk to a custom biome within a specified height range.
@@ -133,35 +110,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
    @AsOf("0.0.1")
-   public static void setChunkBiome(
-           @NotNull Chunk chunk,
-           int minHeight,
-           int maxHeight,
-           @NotNull CustomBiome customBiome,
-           boolean updateBiome
-   ) {
-        RegionAccessor accessor = chunk.getWorld();
-        NamespacedKey key = customBiome.toNamespacedKey();
-
-        int minX = chunk.getX() << 4;
-        int maxX = minX + 16;
-
-        int minZ = chunk.getZ() << 4;
-        int maxZ = minZ + 16;
-
-        for (int x = minX; x < maxX; x++) {
-           for (int y = minHeight; y < maxHeight; y++) {
-               for (int z = minZ; z < maxZ; z++) {
-                   // Set the biome of each block to the custom biome
-                   UNSAFE.setBiomeKey(accessor, x, y, z, key);
-               }
-           }
-        }
-
-        if (updateBiome) {
-           BiomeUpdater.updateChunk(chunk);
-        }
-   }
+   void setChunkBiome(@NotNull Chunk chunk, int minHeight, int maxHeight, @NotNull CustomBiome customBiome, boolean updateBiome);
 
     /**
      * Sets the biome of a bounding box to a custom biome.
@@ -172,9 +121,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setBoundingBoxBiome(@NotNull World world, @NotNull BoundingBox boundingBox, @NotNull CustomBiome customBiome) {
-        setRegionBiome(world, boundingBox.getMin(), boundingBox.getMax(), customBiome);
-    }
+    void setBoundingBoxBiome(@NotNull World world, @NotNull BoundingBox boundingBox, @NotNull CustomBiome customBiome);
 
     /**
      * Sets the biome of a region to a custom biome.
@@ -185,14 +132,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome) {
-        if (from.getWorld().equals(to.getWorld())) {
-            setRegionBiome(from.getWorld(), from, to, customBiome, true);
-            return;
-        }
-
-        throw new IllegalArgumentException("Locations must be in the same world!");
-    }
+    void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome);
 
     /**
      * Sets the biome of a region to a custom biome.
@@ -205,14 +145,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
-        if (from.getWorld().equals(to.getWorld())) {
-            setRegionBiome(from.getWorld(), from, to, customBiome, updateBiome);
-            return;
-        }
-
-        throw new IllegalArgumentException("Locations must be in the same world!");
-    }
+    void setRegionBiome(@NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome);
 
     /**
      * Sets the biome of a region to a custom biome.
@@ -224,9 +157,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.1")
-    public static void setRegionBiome(@NotNull World world, @NotNull Vector from, @NotNull Vector to, @NotNull CustomBiome customBiome) {
-        setRegionBiome(world, from, to, customBiome, false);
-    }
+    void setRegionBiome(@NotNull World world, @NotNull Vector from, @NotNull Vector to, @NotNull CustomBiome customBiome);
 
     /**
      * Sets the biome of a region to a custom biome.
@@ -240,15 +171,7 @@ public final class BiomeSetter {
      * @version 0.0.1
      */
     @AsOf("0.0.2")
-    public static void setRegionBiome(
-            @NotNull World world,
-            @NotNull Vector from,
-            @NotNull Vector to,
-            @NotNull CustomBiome customBiome,
-            boolean updateBiome
-    ) {
-        setRegionBiome(world, from.toLocation(world), to.toLocation(world), customBiome, updateBiome);
-    }
+    void setRegionBiome(@NotNull World world, @NotNull Vector from, @NotNull Vector to, @NotNull CustomBiome customBiome, boolean updateBiome);
 
     /**
      * Sets the biome of a region to a custom biome.
@@ -264,34 +187,6 @@ public final class BiomeSetter {
      * @version 0.0.2
      */
     @AsOf("0.0.1")
-    public static void setRegionBiome(
-            @NotNull World world,
-            @NotNull Location from,
-            @NotNull Location to,
-            @NotNull CustomBiome customBiome,
-            boolean updateBiome
-    ) {
-        PointRange3D range = PointRange3D.of(from, to);
-        Optional<NMS> nms = NMSHandler.getNMS();
-
-        nms.ifPresent(n -> n.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), customBiome.toNamespacedKey()));
-
-        if (updateBiome) {
-            BiomeUpdater.updateChunks(from, to);
-        }
-//        int minHeight = Math.max(range.minY(), MIN_HEIGHT);
-//        int maxHeight = Math.min(range.maxY(), MAX_HEIGHT);
-//
-//        // Iterate over the blocks in the region
-//        for (int x = range.minX(); x <= range.maxX(); x++) {
-//            for (int y = minHeight; y <= maxHeight; y++) {
-//                for (int z = range.minZ(); z <= range.maxZ(); z++) {
-//                    // Set the biome of each block to the custom biome
-//                    UNSAFE.setBiomeKey(accessor, x, y, z, key);
-//                }
-//            }
-//        }
-
-    }
+    void setRegionBiome(@NotNull World world, @NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome);
 
 }

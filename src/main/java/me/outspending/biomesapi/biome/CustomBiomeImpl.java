@@ -1,8 +1,8 @@
 package me.outspending.biomesapi.biome;
 
-import me.outspending.biomesapi.BiomeResourceKey;
+import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.BiomeSettings;
-import me.outspending.biomesapi.ParticleRenderer;
+import me.outspending.biomesapi.renderer.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.resources.ResourceLocation;
 import org.bukkit.NamespacedKey;

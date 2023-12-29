@@ -1,4 +1,4 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.renderer;
 
 import lombok.Getter;
 import me.outspending.biomesapi.annotations.AsOf;

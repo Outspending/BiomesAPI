@@ -1,9 +1,9 @@
 package me.outspending.biomesapi.biome;
 
 import com.google.common.base.Preconditions;
-import me.outspending.biomesapi.BiomeResourceKey;
+import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.BiomeSettings;
-import me.outspending.biomesapi.ParticleRenderer;
+import me.outspending.biomesapi.renderer.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
@@ -12,41 +12,113 @@ import org.jetbrains.annotations.NotNull;
 @AsOf("0.0.2")
 public interface CustomBiome {
 
+    /**
+     * Returns a new instance of the Builder class.
+     *
+     * @return a new Builder instance
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     static @NotNull Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns the NamespacedKey of the CustomBiome.
+     *
+     * @return the NamespacedKey of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     @NotNull NamespacedKey toNamespacedKey();
 
+    /**
+     * Returns the BiomeResourceKey of the CustomBiome.
+     *
+     * @return the BiomeResourceKey of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     @NotNull BiomeResourceKey getResourceKey();
 
+    /**
+     * Returns the BiomeSettings of the CustomBiome.
+     *
+     * @return the BiomeSettings of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     @NotNull BiomeSettings getSettings();
 
+    /**
+     * Returns the fog color of the CustomBiome.
+     *
+     * @return the fog color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getFogColor();
 
+    /**
+     * Returns the water color of the CustomBiome.
+     *
+     * @return the water color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getWaterColor();
 
+    /**
+     * Returns the water fog color of the CustomBiome.
+     *
+     * @return the water fog color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getWaterFogColor();
 
+    /**
+     * Returns the sky color of the CustomBiome.
+     *
+     * @return the sky color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getSkyColor();
 
+    /**
+     * Returns the foliage color of the CustomBiome.
+     *
+     * @return the foliage color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getFoliageColor();
 
+    /**
+     * Returns the grass color of the CustomBiome.
+     *
+     * @return the grass color of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     int getGrassColor();
 
+    /**
+     * Returns the ParticleRenderer of the CustomBiome.
+     *
+     * @return the ParticleRenderer of the CustomBiome
+     * @since 0.0.2
+     */
     @AsOf("0.0.2")
     @NotNull ParticleRenderer getParticleRenderer();
 
+    /**
+     * This class is used to create a new CustomBiome object.
+     * It provides methods to set the properties of the CustomBiome.
+     *
+     * @version 0.0.2
+     */
     @AsOf("0.0.2")
     class Builder {
 
