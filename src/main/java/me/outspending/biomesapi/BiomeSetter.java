@@ -270,11 +270,10 @@ public final class BiomeSetter {
             @NotNull CustomBiome customBiome,
             boolean updateBiome
     ) {
-        NamespacedKey key = customBiome.toNamespacedKey();
         PointRange3D range = PointRange3D.of(from, to);
-
         Optional<NMS> nms = NMSHandler.getNMS();
-        nms.ifPresent(n -> n.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), key.getNamespace(), key.getKey()));
+
+        nms.ifPresent(n -> n.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), customBiome.toNamespacedKey()));
 
         if (updateBiome) {
             BiomeUpdater.updateChunks(from, to);
