@@ -1,5 +1,6 @@
 plugins {
     id 'io.papermc.paperweight.userdev' version '1.5.11'
+    id 'java-library'
 }
 
 allprojects {
@@ -38,6 +39,23 @@ subprojects {
         annotationProcessor 'org.projectlombok:lombok:1.18.30'
     }
 
+    // publish NMS apis
+    // this is required because consumers require getting the POM
+    // files from this project's dependencies, even if they're completely
+    // shaded and included in this file.
+    //
+    // not optimal because this leads to more network calls when downloading
+    // the api for the first time.
+    publishing {
+        publications {
+            create('maven', MavenPublication) {
+                groupId = 'com.github.Outspending'
+                artifactId = project.name
+
+                from components.java
+            }
+        }
+    }
 }
 
 repositories {
@@ -60,16 +78,15 @@ def biomesNMSVersions = ["1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3"]
 dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
-    implementation project(path: ':BiomesAPI-NMS', configuration: 'shadow')
+    implementation project(':NMS:Wrapper')
     biomesNMSVersions.each { version ->
-        implementation project(path: ":BiomesAPI-${version}", configuration: 'shadow')
+        implementation project(":BiomesAPI-${version}")
     }
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
 }
-
 
 // The file for publication.
 def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
