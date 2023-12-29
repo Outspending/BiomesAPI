@@ -106,7 +106,7 @@ dependencies {
 
     implementation(project(":NMS:Wrapper"))
     for (version in nmsVersions) {
-        implementation(project(":NMS:${version}"))
+        implementation(project(path = ":NMS:${version}", configuration = "reobf"))
     }
 }
 
