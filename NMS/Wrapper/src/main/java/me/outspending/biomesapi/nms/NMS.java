@@ -79,6 +79,6 @@ public interface NMS {
      */
     @NotNull Object getRegistry();
 
-    void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path);
+    void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull NamespacedKey namespacedKey);
 
 }

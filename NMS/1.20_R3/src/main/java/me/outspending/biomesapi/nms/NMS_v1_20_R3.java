@@ -13,6 +13,7 @@ import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.v1_20_R3.CraftChunk;
 import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
@@ -119,7 +120,7 @@ public class NMS_v1_20_R3 implements NMS {
     }
 
     @Override
-    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path) {
+    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull NamespacedKey namespacedKey) {
 
     }
 

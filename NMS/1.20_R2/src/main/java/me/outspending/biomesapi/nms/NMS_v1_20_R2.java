@@ -122,8 +122,11 @@ public class NMS_v1_20_R2 implements NMS {
     }
 
     @Override
-    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull String key, @NotNull String path) {
+    public void updateBiome(@NotNull Location minLoc, @NotNull Location maxLoc, @NotNull NamespacedKey namespacedKey) {
         CompletableFuture.runAsync(() -> {
+
+            String key = namespacedKey.getNamespace();
+            String path = namespacedKey.getKey();
 
             ResourceKey<Biome> biomeKey = ResourceKey.create(Registries.BIOME, new ResourceLocation(key, path));
             Biome biome = getRegistry().get(biomeKey);
