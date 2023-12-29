@@ -15,6 +15,28 @@ allprojects {
     sourceCompatibility = 17
     targetCompatibility = 17
 
+    // The file for publication.
+    def publishFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
+
+    // publish NMS apis
+    // this is required because consumers require getting the POM
+    // files from this project's dependencies, even if they're completely
+    // shaded and included in this file.
+    //
+    // not optimal because this leads to more network calls when downloading
+    // the api for the first time.
+    publishing {
+        publications {
+            create('maven', MavenPublication) {
+                groupId = 'com.github.Outspending'
+                artifactId = project.name
+
+                artifact publishFile
+                from components.java
+            }
+        }
+    }
+
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
     }
@@ -40,23 +62,6 @@ subprojects {
         annotationProcessor 'org.projectlombok:lombok:1.18.30'
     }
 
-    // publish NMS apis
-    // this is required because consumers require getting the POM
-    // files from this project's dependencies, even if they're completely
-    // shaded and included in this file.
-    //
-    // not optimal because this leads to more network calls when downloading
-    // the api for the first time.
-    publishing {
-        publications {
-            create('maven', MavenPublication) {
-                groupId = 'com.github.Outspending'
-                artifactId = project.name
-
-                from components.java
-            }
-        }
-    }
 }
 
 repositories {
@@ -87,21 +92,6 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-}
-
-// The file for publication.
-def buildFile = layout.buildDirectory.file("libs/BiomesAPI-${project.version}.jar")
-
-publishing {
-    publications {
-        create('maven', MavenPublication) {
-            groupId = 'com.github.Outspending'
-            artifactId = 'BiomesAPI'
-
-            artifact buildFile
-            from components.java
-        }
-    }
 }
 
 publishMavenPublicationToMavenLocal {
