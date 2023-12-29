@@ -20,7 +20,6 @@ BiomesAPI was made for servers who are looking for more of an aesthetic feel to 
 ## Release Notes 📃
 Check out the more detailed release notes [HERE](https://github.com/Outspending/BiomesAPI/blob/main/RELEASE_NOTES.md)
 
-
 ## Installation ⭐
 Installing BiomesAPI is easy! Just follow these steps, and you'll be on your way to creating your own custom biomes!
 1. Find the latest version of BiomesAPI [HERE](https://github.com/Outspending/BiomesAPI/releases)
@@ -41,6 +40,11 @@ dependencies {
 5. All done!
 
 Now you can use our API to create your own custom biomes!
+
+## Nightly Builds 🌙
+Nightly builds are builds that add experimental features to BiomesAPI. Some of these features are just in testing and might not make it into the main API!
+
+If you are intrested in **Nightly Builds** please check our [Wiki](https://github.com/Outspending/BiomesAPI/wiki/Nightly-Builds) and the [Nightly Branch](https://github.com/Outspending/BiomesAPI/tree/nightly)
 
 ## Wiki 🧑‍💻
 Our Wiki is a great place to learn how to use BiomesAPI. This Wiki is updated frequently to make sure our users know how to use our API.
