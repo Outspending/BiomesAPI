@@ -67,7 +67,7 @@ public record BiomeSettings(
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder depth(float depth) {
+        public @NotNull Builder depth(@Range(from = 0, to = 25) float depth) {
             this.depth = depth;
             return this;
         }
@@ -80,7 +80,7 @@ public record BiomeSettings(
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder scale(float scale) {
+        public @NotNull Builder scale(@Range(from = 0, to = 25) float scale) {
             this.scale = scale;
             return this;
         }
@@ -93,7 +93,7 @@ public record BiomeSettings(
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder temperature(float temperature) {
+        public @NotNull Builder temperature(@Range(from = 0, to = 25) float temperature) {
             this.temperature = temperature;
             return this;
         }
@@ -106,7 +106,7 @@ public record BiomeSettings(
          * @return The Builder object, for chaining method calls.
          */
         @AsOf("0.0.1")
-        public @NotNull Builder downfall(float downfall) {
+        public @NotNull Builder downfall(@Range(from = 0, to = 25) float downfall) {
             this.downfall = downfall;
             return this;
         }

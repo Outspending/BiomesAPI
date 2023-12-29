@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
+import net.minecraft.world.level.biome.Biome;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,6 +59,12 @@ public class BiomeHandler {
     @AsOf("0.0.1")
     public static boolean isBiome(@NotNull BiomeResourceKey resourceKey) {
         return getBiome(resourceKey) != null;
+    }
+
+    // TODO: Add a method to get a biome from a location
+    @AsOf("0.0.2")
+    public static @Nullable CustomBiome getBiome(@NotNull Location location) {
+        return null;
     }
 
 }
