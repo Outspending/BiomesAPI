@@ -1,141 +1,54 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.biome;
 
 import com.google.common.base.Preconditions;
-import lombok.Getter;
-import lombok.Setter;
+import me.outspending.biomesapi.BiomeResourceKey;
+import me.outspending.biomesapi.BiomeSettings;
+import me.outspending.biomesapi.ParticleRenderer;
 import me.outspending.biomesapi.annotations.AsOf;
-import net.minecraft.resources.ResourceLocation;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * This class represents a custom biome in Minecraft.
- * It includes properties such as a BiomeResourceKey, BiomeSettings, and various color settings.
- * It also includes a nested Builder class for creating instances of CustomBiome.
- *
- * @version 0.0.1
- */
-@AsOf("0.0.1")
-@Getter @Setter
-public final class CustomBiome {
+@AsOf("0.0.2")
+public interface CustomBiome {
 
-    // Required Settings
-    private final BiomeResourceKey resourceKey;
-    private final BiomeSettings settings;
-
-    // Required Colors
-    private final int fogColor;
-    private final int waterColor;
-    private final int waterFogColor;
-    private final int skyColor;
-
-    // Optional Colors
-    private int foliageColor = 0;
-    private int grassColor = 0;
-
-    // Optional Settings
-    private ParticleRenderer particleRenderer;
-
-    /**
-     * This constructor creates a new CustomBiome object with the required settings and colors.
-     *
-     * @param resourceKey The BiomeResourceKey for the custom biome.
-     * @param settings The BiomeSettings for the custom biome.
-     * @param fogColor The fog color for the custom biome.
-     * @param waterColor The water color for the custom biome.
-     * @param waterFogColor The water fog color for the custom biome.
-     * @param skyColor The sky color for the custom biome.
-     *
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public CustomBiome(
-            @NotNull BiomeResourceKey resourceKey,
-            @NotNull BiomeSettings settings,
-
-            int fogColor,
-            int waterColor,
-            int waterFogColor,
-            int skyColor,
-
-            @NotNull ParticleRenderer particleRenderer
-    ) {
-        this.resourceKey = resourceKey;
-        this.settings = settings;
-        this.particleRenderer = particleRenderer;
-
-        this.fogColor = fogColor;
-        this.waterColor = waterColor;
-        this.waterFogColor = waterFogColor;
-        this.skyColor = skyColor;
-    }
-
-    /**
-     * This constructor creates a new CustomBiome object with the required settings and colors, as well as optional foliage and grass colors.
-     *
-     * @param resourceKey The BiomeResourceKey for the custom biome.
-     * @param settings The BiomeSettings for the custom biome.
-     * @param fogColor The fog color for the custom biome.
-     * @param waterColor The water color for the custom biome.
-     * @param waterFogColor The water fog color for the custom biome.
-     * @param skyColor The sky color for the custom biome.
-     * @param foliageColor The foliage color for the custom biome.
-     * @param grassColor The grass color for the custom biome.
-     *
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public CustomBiome(
-            @NotNull BiomeResourceKey resourceKey,
-            @NotNull BiomeSettings settings,
-
-            int fogColor,
-            int waterColor,
-            int waterFogColor,
-            int skyColor,
-            int foliageColor,
-            int grassColor,
-
-            @NotNull ParticleRenderer particleRenderer
-    ) {
-        this(resourceKey, settings, fogColor, waterColor, waterFogColor, skyColor, particleRenderer);
-        this.foliageColor = foliageColor;
-        this.grassColor = grassColor;
-    }
-
-    /**
-     * This method converts the BiomeResourceKey of the custom biome to a NamespacedKey.
-     *
-     * @version 0.0.1
-     * @return The NamespacedKey corresponding to the BiomeResourceKey of the custom biome.
-     */
-    @AsOf("0.0.1")
-    public NamespacedKey toNamespacedKey() {
-        ResourceLocation location = resourceKey.resourceLocation();
-        return new NamespacedKey(location.getNamespace(), location.getPath());
-    }
-
-    /**
-     * This method creates a new Builder object for creating instances of CustomBiome.
-     *
-     * @version 0.0.1
-     * @return a new Builder object.
-     */
-    @AsOf("0.0.1")
-    public static @NotNull Builder builder() {
+    @AsOf("0.0.2")
+    static @NotNull Builder builder() {
         return new Builder();
     }
 
-    /**
-     * This is a nested Builder class for creating instances of CustomBiome.
-     * It uses the Builder pattern, where you call a chain of methods to set the properties,
-     * and then call build() to create the object.
-     *
-     * @version 0.0.1
-     */
-    @AsOf("0.0.1")
-    public static final class Builder {
+    @AsOf("0.0.2")
+    @NotNull NamespacedKey toNamespacedKey();
+
+    @AsOf("0.0.2")
+    @NotNull BiomeResourceKey getResourceKey();
+
+    @AsOf("0.0.2")
+    @NotNull BiomeSettings getSettings();
+
+    @AsOf("0.0.2")
+    int getFogColor();
+
+    @AsOf("0.0.2")
+    int getWaterColor();
+
+    @AsOf("0.0.2")
+    int getWaterFogColor();
+
+    @AsOf("0.0.2")
+    int getSkyColor();
+
+    @AsOf("0.0.2")
+    int getFoliageColor();
+
+    @AsOf("0.0.2")
+    int getGrassColor();
+
+    @AsOf("0.0.2")
+    @NotNull ParticleRenderer getParticleRenderer();
+
+    @AsOf("0.0.2")
+    class Builder {
 
         private BiomeResourceKey resourceKey;
         private BiomeSettings settings;
@@ -370,7 +283,7 @@ public final class CustomBiome {
             Preconditions.checkArgument(resourceKey != null, "Resource key must be set");
             Preconditions.checkArgument(settings != null, "Settings must be set");
 
-            return new CustomBiome(
+            return new CustomBiomeImpl(
                     resourceKey,
                     settings,
                     fogColor,

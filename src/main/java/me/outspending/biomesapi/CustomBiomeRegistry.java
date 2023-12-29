@@ -1,6 +1,7 @@
 package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.exceptions.UnknownNMSVersionException;
 import me.outspending.biomesapi.nms.NMS;
 import me.outspending.biomesapi.nms.NMSHandler;

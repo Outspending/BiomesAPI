@@ -1,6 +1,7 @@
 package me.outspending.biomesapi;
 
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.biome.CustomBiome;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 

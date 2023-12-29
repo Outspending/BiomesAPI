@@ -3,6 +3,7 @@ package me.outspending.biomesapi;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
 import net.minecraft.world.level.biome.Biome;
 import org.bukkit.Location;

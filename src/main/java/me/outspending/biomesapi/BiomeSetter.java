@@ -2,6 +2,7 @@ package me.outspending.biomesapi;
 
 import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.misc.PointRange3D;
 import me.outspending.biomesapi.nms.NMS;
 import me.outspending.biomesapi.nms.NMSHandler;
