@@ -1,6 +1,7 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("io.papermc.paperweight.userdev") version "1.5.11"
+    id("me.champeau.jmh") version "0.7.2"
     `maven-publish`
     java
 }
@@ -15,7 +16,6 @@ allprojects {
 
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
-
     }
 
     // The file for publication.
@@ -97,10 +97,15 @@ val nmsVersions = listOf("1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3")
 dependencies {
     paperweight.paperDevBundle("1.20-R0.1-SNAPSHOT")
 
+    // NMS Implementations
     implementation(project(":NMS:Wrapper"))
     for (version in nmsVersions) {
         implementation(project(path = ":NMS:${version}", configuration = "reobf"))
     }
+
+    // JMH Implementations
+    jmh("org.openjdk.jmh:jmh-core:0.9")
+    jmh("org.openjdk.jmh:jmh-generator-annprocess:0.9")
 }
 
 
