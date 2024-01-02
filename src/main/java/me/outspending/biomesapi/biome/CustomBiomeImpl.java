@@ -2,6 +2,7 @@ package me.outspending.biomesapi.biome;
 
 import me.outspending.biomesapi.BiomeSettings;
 import me.outspending.biomesapi.annotations.AsOf;
+import me.outspending.biomesapi.registry.BiomeRegistry;
 import me.outspending.biomesapi.registry.BiomeResourceKey;
 import me.outspending.biomesapi.renderer.ParticleRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -118,6 +119,11 @@ public final class CustomBiomeImpl implements CustomBiome {
     @Override
     public @NotNull ParticleRenderer getParticleRenderer() {
         return particleRenderer;
+    }
+
+    @Override
+    public void register() {
+        BiomeRegistry.newRegistry().register(this);
     }
 
 }

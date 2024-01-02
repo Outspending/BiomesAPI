@@ -114,6 +114,14 @@ public interface CustomBiome {
     @NotNull ParticleRenderer getParticleRenderer();
 
     /**
+     * Registers the CustomBiome to the biome registry.
+     *
+     * @since 0.0.2
+     */
+    @AsOf("0.0.2")
+    void register();
+
+    /**
      * This class is used to create a new CustomBiome object.
      * It provides methods to set the properties of the CustomBiome.
      *
