@@ -7,4 +7,6 @@ dependencies {
     compileOnly(group = "com.github.SkriptLang", name = "Skript", version = "2.7.1").apply {
         isTransitive = false
     }
+
+    implementation(rootProject)
 }
