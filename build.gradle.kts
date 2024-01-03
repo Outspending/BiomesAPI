@@ -87,10 +87,6 @@ allprojects {
         }
     }
 
-    dependencies {
-        compileOnly("org.projectlombok:lombok:1.18.30")
-        annotationProcessor("org.projectlombok:lombok:1.18.30")
-    }
 }
 
 val nmsVersions = listOf("1.19_R2", "1.19_R3", "1.20_R1", "1.20_R2", "1.20_R3")

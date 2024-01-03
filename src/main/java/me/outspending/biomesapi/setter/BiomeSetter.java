@@ -1,6 +1,5 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.setter;
 
-import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.biome.CustomBiome;
 import org.bukkit.Chunk;
@@ -21,6 +20,9 @@ import org.jetbrains.annotations.NotNull;
  */
 @AsOf("0.0.1")
 public interface BiomeSetter {
+
+    int MIN_HEIGHT = -64;
+    int MAX_HEIGHT = 320;
 
     /**
      * Returns the RegionAccessor for the given location.

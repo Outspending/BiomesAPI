@@ -1,6 +1,5 @@
 package me.outspending.biomesapi.renderer;
 
-import lombok.Getter;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -12,7 +11,6 @@ import net.minecraft.core.particles.SimpleParticleType;
  *
  * @version 0.0.1
  */
-@Getter
 @AsOf("0.0.1")
 public enum AmbientParticle {
     ASH(ParticleTypes.ASH),
@@ -103,6 +101,18 @@ public enum AmbientParticle {
     @AsOf("0.0.1")
     AmbientParticle(SimpleParticleType particle) {
         this.particle = particle;
+    }
+
+    /**
+     * This method returns the SimpleParticleType associated with the ambient particle.
+     * The @AsOf annotation indicates the version when this method was introduced.
+     *
+     * @return the SimpleParticleType associated with the ambient particle
+     * @version 0.0.1
+     */
+    @AsOf("0.0.1")
+    public SimpleParticleType getParticle() {
+        return particle;
     }
 
 }

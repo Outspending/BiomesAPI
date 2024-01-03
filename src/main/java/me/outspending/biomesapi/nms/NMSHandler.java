@@ -1,6 +1,5 @@
 package me.outspending.biomesapi.nms;
 
-import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownNMSVersionException;
 import org.bukkit.Bukkit;
@@ -16,7 +15,6 @@ import java.util.function.Consumer;
  *
  * @version 0.0.1
  */
-@UtilityClass
 @AsOf("0.0.1")
 public class NMSHandler {
 
@@ -24,6 +22,10 @@ public class NMSHandler {
      * Holds the NMS version instance.
      */
     private static NMS NMS_VERSION;
+
+    public NMSHandler() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
+    }
 
     /**
      * Static initializer for the NMSHandler class.

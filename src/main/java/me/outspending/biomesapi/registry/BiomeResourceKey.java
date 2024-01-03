@@ -80,14 +80,15 @@ public record BiomeResourceKey(@NotNull ResourceLocation resourceLocation) {
     @Override
     @AsOf("0.0.1")
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (obj instanceof BiomeResourceKey key) {
+            ResourceLocation location = key.resourceLocation();
+            String namespace = location.getNamespace();
+            String path = location.getPath();
 
-        BiomeResourceKey key = (BiomeResourceKey) obj;
-        String namespace = key.resourceLocation().getNamespace();
-        String path = key.resourceLocation().getPath();
+            return namespace.equals(this.resourceLocation.getNamespace()) && path.equals(this.resourceLocation.getPath());
+        }
 
-        return namespace.equals(this.resourceLocation.getNamespace()) && path.equals(this.resourceLocation.getPath());
+        return false;
     }
 
 }

@@ -1,6 +1,5 @@
 package me.outspending.biomesapi;
 
-import lombok.Getter;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.world.level.biome.Biome;
 
@@ -11,7 +10,6 @@ import net.minecraft.world.level.biome.Biome;
  *
  * @version 0.0.1
  */
-@Getter
 @AsOf("0.0.1")
 public enum BiomeTempModifier {
 
@@ -43,6 +41,15 @@ public enum BiomeTempModifier {
      */
     BiomeTempModifier(Biome.TemperatureModifier modifier) {
         this.modifier = modifier;
+    }
+
+    /**
+     * This method returns the TemperatureModifier that corresponds to the enum value.
+     *
+     * @return The TemperatureModifier that corresponds to the enum value.
+     */
+    public Biome.TemperatureModifier getModifier() {
+        return modifier;
     }
 
 }

@@ -16,10 +16,13 @@ public class BiomeUpdaterImpl implements BiomeUpdater {
 
     @Override
     public void updateChunks(Location from, Location to) {
-        if (from == null || to == null)
+        if (from == null || to == null) {
             throw new IllegalArgumentException("Locations cannot be null.");
+        } else {
+            List<Chunk> updateChunks = getChunksBetweenLocations(from, to);
 
-        updateChunks(getChunksBetweenLocations(from, to));
+            updateChunks(updateChunks);
+        }
     }
 
     @Override

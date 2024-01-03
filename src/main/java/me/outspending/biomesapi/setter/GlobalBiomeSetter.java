@@ -1,22 +1,19 @@
-package me.outspending.biomesapi;
+package me.outspending.biomesapi.setter;
 
+import me.outspending.biomesapi.BiomeUpdater;
 import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.misc.PointRange3D;
-import me.outspending.biomesapi.nms.NMSHandler;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
-public class BiomeSetterImpl implements BiomeSetter {
+public class GlobalBiomeSetter implements BiomeSetter {
 
     @SuppressWarnings("deprecation")
     private static final UnsafeValues UNSAFE = Bukkit.getUnsafe();
     private static final BiomeUpdater BIOME_UPDATER = BiomeUpdater.of();
-
-    private static final int MAX_HEIGHT = 320;
-    private static final int MIN_HEIGHT = -64;
 
     @Override
     public void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome) {
@@ -112,14 +109,23 @@ public class BiomeSetterImpl implements BiomeSetter {
 
     @Override
     public void setRegionBiome(@NotNull World world, @NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
-        NMSHandler.executeNMS(nms -> {
+        if (!from.getWorld().equals(to.getWorld())) {
+            throw new RuntimeException("Locations must be in the same world!");
+        } else {
+            NamespacedKey key = customBiome.toNamespacedKey();
             PointRange3D range = PointRange3D.of(from, to);
 
-            nms.updateBiome(range.getMinLocation(world), range.getMaxLocation(world), customBiome.toNamespacedKey());
-        });
+            for (int x = range.minX(); x <= range.maxX(); x++) {
+                for (int y = range.minY(); y <= range.maxY(); y++) {
+                    for (int z = range.minZ(); z <= range.maxZ(); z++) {
+                        UNSAFE.setBiomeKey(world, x, y, z, key);
+                    }
+                }
+            }
 
-        if (updateBiome) {
-            BIOME_UPDATER.updateChunks(from, to);
+            if (updateBiome) {
+                BIOME_UPDATER.updateChunks(from, to);
+            }
         }
     }
 

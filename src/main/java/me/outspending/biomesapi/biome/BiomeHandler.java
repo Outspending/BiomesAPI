@@ -1,7 +1,5 @@
 package me.outspending.biomesapi.biome;
 
-import lombok.Getter;
-import lombok.experimental.UtilityClass;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
 import me.outspending.biomesapi.registry.BiomeResourceKey;
@@ -20,11 +18,24 @@ import java.util.List;
  * @version 0.0.1
  */
 @AsOf("0.0.1")
-@UtilityClass
 public class BiomeHandler {
 
-    @Getter
     private static final List<CustomBiome> registeredBiomes = new ArrayList<>();
+
+    public BiomeHandler() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
+    }
+
+    /**
+     * This method gets the registered biomes list
+     *
+     * @version 0.0.1
+     * @return
+     */
+    @AsOf("0.0.1")
+    public static List<CustomBiome> getRegisteredBiomes() {
+        return registeredBiomes;
+    }
 
     /**
      * This method retrieves a Biome object from the Minecraft server's biome registry.
