@@ -25,6 +25,16 @@ public interface BiomeSetter {
     int MAX_HEIGHT = 320;
 
     /**
+     * Returns a new instance of the BiomeSetter interface.
+     *
+     * @return a new instance of the BiomeSetter interface
+     * @version 0.0.1
+     */
+    static BiomeSetter of() {
+        return new GlobalBiomeSetter();
+    }
+
+    /**
      * Returns the RegionAccessor for the given location.
      *
      * @param location the location

@@ -72,10 +72,4 @@ public class BiomeHandler {
         return getBiome(resourceKey) != null;
     }
 
-    // TODO: Add a method to get a biome from a location
-    @AsOf("0.0.2")
-    public static @Nullable CustomBiome getBiome(@NotNull Location location) {
-        return null;
-    }
-
 }
