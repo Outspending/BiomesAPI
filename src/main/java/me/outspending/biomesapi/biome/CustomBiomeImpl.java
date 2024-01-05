@@ -17,10 +17,10 @@ public final class CustomBiomeImpl implements CustomBiome {
     private final BiomeSettings settings;
 
     // Required Colors
-    private final int fogColor;
-    private final int waterColor;
-    private final int waterFogColor;
-    private final int skyColor;
+    private int fogColor;
+    private int waterColor;
+    private int waterFogColor;
+    private int skyColor;
 
     // Optional Colors
     private int foliageColor = 0;
@@ -119,6 +119,46 @@ public final class CustomBiomeImpl implements CustomBiome {
     @Override
     public @NotNull ParticleRenderer getParticleRenderer() {
         return particleRenderer;
+    }
+
+    @Override
+    public void setFogColor(int fogColor) {
+        this.fogColor = fogColor;
+    }
+
+    @Override
+    public void setWaterColor(int waterColor) {
+        this.waterColor = waterColor;
+    }
+
+    @Override
+    public void setWaterFogColor(int waterFogColor) {
+        this.waterFogColor = waterFogColor;
+    }
+
+    @Override
+    public void setSkyColor(int skyColor) {
+        this.skyColor = skyColor;
+    }
+
+    @Override
+    public void setFoliageColor(int foliageColor) {
+        this.foliageColor = foliageColor;
+    }
+
+    @Override
+    public void setGrassColor(int grassColor) {
+        this.grassColor = grassColor;
+    }
+
+    @Override
+    public void setParticleRenderer(@NotNull ParticleRenderer particleRenderer) {
+        this.particleRenderer = particleRenderer;
+    }
+
+    @Override
+    public Builder toBuilder() {
+        return new Builder(this);
     }
 
     @Override

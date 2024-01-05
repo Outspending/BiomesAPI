@@ -3,7 +3,6 @@ package me.outspending.biomesapi.biome;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
 import me.outspending.biomesapi.registry.BiomeResourceKey;
-import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

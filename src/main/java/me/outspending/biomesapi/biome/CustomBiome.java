@@ -114,6 +114,78 @@ public interface CustomBiome {
     @NotNull ParticleRenderer getParticleRenderer();
 
     /**
+     * Sets the fog color of the CustomBiome.
+     *
+     * @param fogColor the fog color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setFogColor(int fogColor);
+
+    /**
+     * Sets the water color of the CustomBiome.
+     *
+     * @param waterColor the water color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setWaterColor(int waterColor);
+
+    /**
+     * Sets the water fog color of the CustomBiome.
+     *
+     * @param waterFogColor the water fog color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setWaterFogColor(int waterFogColor);
+
+    /**
+     * Sets the sky color of the CustomBiome.
+     *
+     * @param skyColor the sky color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setSkyColor(int skyColor);
+
+    /**
+     * Sets the foliage color of the CustomBiome.
+     *
+     * @param foliageColor the foliage color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setFoliageColor(int foliageColor);
+
+    /**
+     * Sets the grass color of the CustomBiome.
+     *
+     * @param grassColor the grass color of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setGrassColor(int grassColor);
+
+    /**
+     * Sets the ParticleRenderer of the CustomBiome.
+     *
+     * @param particleRenderer the ParticleRenderer of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    void setParticleRenderer(@NotNull ParticleRenderer particleRenderer);
+
+    /**
+     * Returns a new Builder instance with the properties of the CustomBiome.
+     *
+     * @return a new Builder instance with the properties of the CustomBiome
+     * @since 0.0.5
+     */
+    @AsOf("0.0.5")
+    Builder toBuilder();
+
+    /**
      * Registers the CustomBiome to the biome registry.
      *
      * @since 0.0.2
@@ -155,6 +227,33 @@ public interface CustomBiome {
         private String formatHex(@NotNull String color) {
             if (color.startsWith("#")) color = color.substring(1);
             return color;
+        }
+
+        /**
+         * This method creates a new Builder object.
+         *
+         * @version 0.0.1
+         */
+        @AsOf("0.0.1")
+        public Builder() {}
+
+        /**
+         * This method creates a new Builder object with the properties of the provided CustomBiome.
+         *
+         * @param biome The CustomBiome object to copy the properties from.
+         * @version 0.0.5
+         */
+        @AsOf("0.0.5")
+        public Builder(@NotNull CustomBiome biome) {
+            this.resourceKey = biome.getResourceKey();
+            this.settings = biome.getSettings();
+            this.fogColor = biome.getFogColor();
+            this.waterColor = biome.getWaterColor();
+            this.waterFogColor = biome.getWaterFogColor();
+            this.skyColor = biome.getSkyColor();
+            this.foliageColor = biome.getFoliageColor();
+            this.grassColor = biome.getGrassColor();
+            this.particleRenderer = biome.getParticleRenderer();
         }
 
         /**
