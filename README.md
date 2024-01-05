@@ -33,7 +33,7 @@ repositories {
 3. Add the dependency to your `build.gradle` file
 ```groovy
 dependencies {
-        implementation 'com.github.Outspending:BiomesAPI:0.0.2'
+        implementation 'com.github.Outspending:BiomesAPI:0.0.5'
 }
 ```
 4. Build your project
