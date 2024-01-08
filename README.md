@@ -13,7 +13,10 @@
 
 ---
 
-BiomesAPI is a dependable Custom Biomes API for **Spigot 1.19.3+**. This API allows you to create the biomes of your dreams! BiomesAPI is easy to use and user-friendly.
+> [!NOTE]  
+> BiomesAPI is currently being developed and ain't finished yet
+
+BiomesAPI is a Custom Biome API for Spigot / PaperMC Servers. This API allows you to create custom biomes with custom colors. This API is also pretty easy to use and user-friendly.
 
 BiomesAPI was made for servers who are looking for more of an aesthetic feel to their builds.
 
