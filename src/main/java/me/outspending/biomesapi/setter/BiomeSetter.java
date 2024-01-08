@@ -11,6 +11,8 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 /**
  * This utility class provides methods to set the biome of blocks, chunks, and regions in the game.
  * It uses the @AsOf annotation to indicate the version since the class or its methods have been present or modified.

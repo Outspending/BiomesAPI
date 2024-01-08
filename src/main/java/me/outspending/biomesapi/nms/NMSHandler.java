@@ -2,6 +2,7 @@ package me.outspending.biomesapi.nms;
 
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownNMSVersionException;
+import me.outspending.biomesapi.nms.*;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 

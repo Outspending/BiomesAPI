@@ -10,7 +10,7 @@ import java.util.List;
 public class BiomeUpdaterImpl implements BiomeUpdater {
 
     @Override
-    public void updateChunk(Chunk chunk) {
+    public void updateChunk(@NotNull Chunk chunk) {
         updateChunks(List.of(chunk));
     }
 

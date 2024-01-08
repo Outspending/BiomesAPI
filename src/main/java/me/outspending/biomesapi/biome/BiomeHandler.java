@@ -1,5 +1,6 @@
 package me.outspending.biomesapi.biome;
 
+import com.google.common.base.Preconditions;
 import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.exceptions.UnknownBiomeException;
 import me.outspending.biomesapi.registry.BiomeResourceKey;
@@ -50,6 +51,8 @@ public class BiomeHandler {
      */
     @AsOf("0.0.1")
     public static @Nullable CustomBiome getBiome(@NotNull BiomeResourceKey resourceKey) {
+        Preconditions.checkNotNull(resourceKey, "resourceKey cannot be null");
+
         return registeredBiomes.stream()
                 .filter(b -> resourceKey.equals(b.getResourceKey()))
                 .findFirst()
@@ -68,6 +71,8 @@ public class BiomeHandler {
      */
     @AsOf("0.0.1")
     public static boolean isBiome(@NotNull BiomeResourceKey resourceKey) {
+        Preconditions.checkNotNull(resourceKey, "resourceKey cannot be null");
+
         return getBiome(resourceKey) != null;
     }
 

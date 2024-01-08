@@ -37,15 +37,4 @@ public interface BiomeRegistry {
     @AsOf("0.0.1")
     void register(@NotNull CustomBiome biome);
 
-    /**
-     * This method unregisters a custom biome from a Minecraft server.
-     * It takes a DedicatedServer object and a CustomBiome object as arguments.
-     *
-     * @version 0.0.2
-     * @param biome The CustomBiome object that should be unregistered from the server.
-     */
-    @AsOf("0.0.2")
-    @Experimental
-    void unregister(@NotNull CustomBiome biome);
-
 }

@@ -1,5 +1,6 @@
 package me.outspending.biomesapi.registry;
 
+import com.google.common.base.Preconditions;
 import me.outspending.biomesapi.BiomeLock;
 import me.outspending.biomesapi.BiomeSettings;
 import me.outspending.biomesapi.annotations.AsOf;
@@ -35,6 +36,8 @@ public class CustomBiomeRegistry implements BiomeRegistry {
     @AsOf("0.0.1")
     @SuppressWarnings("unchecked")
     public void register(@NotNull CustomBiome biome) {
+        Preconditions.checkNotNull(biome, "biome cannot be null");
+
         BiomeLock.unlock(() -> {
 
             // Retrieve the biome registry from NMS
@@ -82,11 +85,6 @@ public class CustomBiomeRegistry implements BiomeRegistry {
 
             return null;
         });
-    }
-
-    @Override
-    public void unregister(@NotNull CustomBiome biome) {
-        // TODO: Implement this method
     }
 
 }

@@ -1,5 +1,6 @@
 package me.outspending.biomesapi.setter;
 
+import com.google.common.base.Preconditions;
 import me.outspending.biomesapi.BiomeUpdater;
 import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.misc.PointRange3D;
@@ -8,6 +9,8 @@ import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.concurrent.NotThreadSafe;
 
 public class GlobalBiomeSetter implements BiomeSetter {
 
@@ -22,6 +25,9 @@ public class GlobalBiomeSetter implements BiomeSetter {
 
     @Override
     public void setBlockBiome(@NotNull Block block, @NotNull CustomBiome customBiome, boolean updateBiome) {
+        Preconditions.checkNotNull(block, "block cannot be null");
+        Preconditions.checkNotNull(customBiome, "customBiome cannot be null");
+
         Location location = block.getLocation();
         RegionAccessor accessor = getRegionAccessor(location);
 
@@ -49,6 +55,9 @@ public class GlobalBiomeSetter implements BiomeSetter {
 
     @Override
     public void setChunkBiome(@NotNull Chunk chunk, int minHeight, int maxHeight, @NotNull CustomBiome customBiome, boolean updateBiome) {
+        Preconditions.checkNotNull(chunk, "chunk cannot be null");
+        Preconditions.checkNotNull(customBiome, "customBiome cannot be null");
+
         RegionAccessor accessor = chunk.getWorld();
         NamespacedKey key = customBiome.toNamespacedKey();
 
@@ -109,6 +118,11 @@ public class GlobalBiomeSetter implements BiomeSetter {
 
     @Override
     public void setRegionBiome(@NotNull World world, @NotNull Location from, @NotNull Location to, @NotNull CustomBiome customBiome, boolean updateBiome) {
+        Preconditions.checkNotNull(world, "world cannot be null");
+        Preconditions.checkNotNull(from, "from cannot be null");
+        Preconditions.checkNotNull(to, "to cannot be null");
+        Preconditions.checkNotNull(customBiome, "customBiome cannot be null");
+
         if (!from.getWorld().equals(to.getWorld())) {
             throw new RuntimeException("Locations must be in the same world!");
         } else {

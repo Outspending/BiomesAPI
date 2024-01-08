@@ -1,8 +1,11 @@
 package me.outspending.biomesapi.registry;
 
+import com.google.common.base.Preconditions;
 import me.outspending.biomesapi.annotations.AsOf;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
+
+import java.lang.annotation.Documented;
 
 /**
  * This class represents a key for a biome resource in the game.
@@ -26,6 +29,9 @@ public record BiomeResourceKey(@NotNull ResourceLocation resourceLocation) {
      */
     @AsOf("0.0.1")
     public static @NotNull BiomeResourceKey of(@NotNull String key, @NotNull String path) {
+        Preconditions.checkArgument(!key.isEmpty(), "key cannot be empty");
+        Preconditions.checkArgument(!path.isEmpty(), "path cannot be empty");
+
         return new BiomeResourceKey(key, path);
     }
 
@@ -40,6 +46,8 @@ public record BiomeResourceKey(@NotNull ResourceLocation resourceLocation) {
      */
     @AsOf("0.0.1")
     public static @NotNull BiomeResourceKey of(@NotNull ResourceLocation resourceLocation) {
+        Preconditions.checkNotNull(resourceLocation, "resourceLocation cannot be null");
+
         return new BiomeResourceKey(resourceLocation);
     }
 
