@@ -111,7 +111,7 @@ public interface CustomBiome {
      * @since 0.0.1
      */
     @AsOf("0.0.1")
-    @NotNull ParticleRenderer getParticleRenderer();
+    ParticleRenderer getParticleRenderer();
 
     /**
      * Sets the fog color of the CustomBiome.

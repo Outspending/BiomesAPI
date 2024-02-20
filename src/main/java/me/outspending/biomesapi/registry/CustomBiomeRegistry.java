@@ -7,7 +7,7 @@ import me.outspending.biomesapi.annotations.AsOf;
 import me.outspending.biomesapi.biome.BiomeHandler;
 import me.outspending.biomesapi.biome.CustomBiome;
 import me.outspending.biomesapi.nms.NMSHandler;
-import me.outspending.biomesapi.renderer.ParticleRenderer;
+import me.outspending.biomesapi.registry.handlers.SpecialEffectsHandler;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.*;
@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @AsOf("0.0.1")
 public class CustomBiomeRegistry implements BiomeRegistry {
+    private static final SpecialEffectsHandler effectsHandler = new SpecialEffectsHandler();
 
     /**
      * This method registers a custom biome to a Minecraft server.
@@ -48,35 +49,20 @@ public class CustomBiomeRegistry implements BiomeRegistry {
                 ResourceLocation resourceLocation = biome.getResourceKey().resourceLocation();
                 BiomeSettings settings = biome.getSettings();
 
-                // Create a new Biome object with the settings and colors from the CustomBiome object
-                BiomeSpecialEffects.Builder effectsBuilder = new BiomeSpecialEffects.Builder()
-                        .fogColor(biome.getFogColor())
-                        .foliageColorOverride(biome.getFoliageColor())
-                        .skyColor(biome.getSkyColor())
-                        .waterColor(biome.getWaterColor())
-                        .waterFogColor(biome.getWaterFogColor())
-                        .grassColorOverride(biome.getGrassColor());
-
-                // Check if a custom particle renderer is provided
-                ParticleRenderer renderer;
-                if ((renderer = biome.getParticleRenderer()) != null) {
-                    effectsBuilder.ambientParticle(new AmbientParticleSettings(
-                            renderer.ambientParticle().getParticle(),
-                            renderer.probability()
-                    ));
-                }
-
                 // Build the Biome object
-                Biome createdBiome = new Biome.BiomeBuilder()
+                Biome.BiomeBuilder biomeBuilder = new Biome.BiomeBuilder()
                         .downfall(settings.downfall())
                         .temperature(settings.temperature())
                         .temperatureAdjustment(settings.modifier().getModifier())
                         .mobSpawnSettings(MobSpawnSettings.EMPTY)
-                        .generationSettings(BiomeGenerationSettings.EMPTY)
-                        .specialEffects(effectsBuilder.build())
-                        .build();
+                        .generationSettings(BiomeGenerationSettings.EMPTY);
+
+                // Create a new Biome object with the settings and colors from the CustomBiome object
+                BiomeSpecialEffects effects = effectsHandler.build(biome);
+                effectsHandler.handle(effects, biomeBuilder);
 
                 // Register the new Biome object to the biome registry
+                Biome createdBiome = biomeBuilder.build();
                 Registry.register(registry, resourceLocation, createdBiome);
 
                 // Add the custom biome to the list of registered biomes
